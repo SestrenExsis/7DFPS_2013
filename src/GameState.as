@@ -104,10 +104,10 @@ package
 			FlxG.camera.follow(player);
 
 			entities = new FlxGroup();
-			for (var i:uint = 0; i < 1; i++)
-				for (var j:uint = 0; j < 1; j++)
+			for (var i:uint = 0; i < 11; i++)
+				for (var j:uint = 0; j < 11; j++)
 				{
-					entities.add(new Entity(i + 2.5, j + 2.5));
+					entities.add(new Entity(i * 2 + 1, j * 2 + 1));
 				}
 			
 			map = new Map(canvas, player);
@@ -139,8 +139,7 @@ package
 			viewport.pixels.fillRect(ceilingRect, 0xff444444);
 			viewport.pixels.fillRect(floorRect, 0xff888888);
 			
-			if (FlxG.keys.justPressed("T")) showTriangleEdges = !showTriangleEdges;
-			
+			if (FlxG.keys.justPressed("T")) showTriangleEdges = !showTriangleEdges;			
 			drawViewWithFaces();
 		}
 		
@@ -158,7 +157,7 @@ package
 			map.orderTree = new Dictionary();
 			orderTreeMin = orderTreeMax = 0;
 			canvas.graphics.clear();
-			addFacesToBuffer();
+			addFacesToBuffer(viewport.width);
 			
 			var _x:uint;
 			var _y:uint;
@@ -177,11 +176,15 @@ package
 			}
 
 			renderEntities();
+			canvas.graphics.lineStyle(1,0xffff00);
 			viewport.pixels.draw(canvas);
 		}
 		
-		private function addFacesToBuffer(SearchResolution:uint = 1):void
+		private function addFacesToBuffer(SearchResolution:uint):void
 		{
+			//A lot of this code is borrowed from http://lodev.org/cgtutor/raycasting.html.
+			//Many thanks to them for the great tutorial.
+			
 			//x-coordinate in camera space
 			var cameraX:Number;
 			//length of ray from current position to next x or y-side
@@ -226,9 +229,9 @@ package
 			playerPosX = player.pos.x / map.texWidth;
 			playerPosY = player.pos.y / map.texHeight;
 			
-			for (var x:uint = 0; x < viewport.width; x += SearchResolution)
+			for (var x:uint = 0; x < SearchResolution; x += 1)
 			{
-				cameraX = 2 * (x / viewport.width) - 1;
+				cameraX = 2 * (x / SearchResolution) - 1;
 				
 				player.setRayDir(cameraX);
 				
@@ -278,7 +281,6 @@ package
 					}
 				} while (passedThroughTile(tileX, tileY) == 0); //Check if ray has hit a wall
 				
-				//Calculate distance of perpendicular ray (oblique distance will give fisheye effect!)
 				if (side == 0) wallDistance = Math.abs((tileX - playerPosX + (1 - stepX) / 2) / player.rayDir.x);
 				else wallDistance= Math.abs((tileY - playerPosY + (1 - stepY) / 2) / player.rayDir.y);
 				
@@ -515,7 +517,7 @@ package
 			var _pX:Number = player.pos.x;
 			var _pY:Number = player.pos.y;
 			var _clipLeft:uint;
-			var _clipRight:uint;
+			var _clipWidth:uint;
 			var _leftEdge:int;
 			var _rightEdge:int;
 			var _width:int;
@@ -525,35 +527,30 @@ package
 				if (entity.alive)
 				{
 					entity.distance = pointOnScreen(entity.x, entity.y, 64, entity.viewPos, entity.scale);
-					
 					if (entity.distance == -1) entity.visible = false;
+					
 					else entity.visible = true;
 					_width = entity.width * entity.scale.x;
-					_clipLeft = _clipRight = 0;
 					
 					_leftEdge = entity.viewPos.x - 0.5 * _width;
 					if (_leftEdge < 0) _leftEdge = 0;
+					_clipLeft = _leftEdge;
 					
 					_rightEdge = entity.viewPos.x + 0.5 * _width;
-					if (_rightEdge > viewport.width)
-					{
-						_clipRight = _rightEdge - viewport.width;
-						_rightEdge = viewport.width;
-					}
-					else _clipRight = 0;
+					if (_rightEdge > viewport.width) _rightEdge = viewport.width;
 					
-					while (zBuffer[_leftEdge + _clipLeft] < entity.distance && (_clipLeft + _clipRight < _width)
-					 	&& (_clipLeft < viewport.width)) _clipLeft += 1;
-					entity.clipRect.x = _clipLeft + _leftEdge;
+					while ((_clipLeft < _rightEdge) && (zBuffer[_clipLeft] < entity.distance)) _clipLeft += 1;
+					entity.clipRect.x = _clipLeft;
+					_clipWidth = _rightEdge - _clipLeft;
 					
-					entity.clipRect.width = viewport.width - entity.clipRect.x - _clipRight;
-					if (entity.clipRect.width > 0 && _clipLeft < viewport.width - _leftEdge)
+					if (_clipWidth > 0)
 					{
-						while (zBuffer[_rightEdge - _clipRight] < entity.distance && (_clipLeft + _clipRight < _width)
-							&& (_clipRight > 0)) _clipRight += 1;
-						entity.clipRect.width = entity.width - entity.clipRect.x - _clipRight / entity.scale.x;
+						while ((_clipWidth > 0) && (zBuffer[_clipLeft + _clipWidth] < entity.distance)) _clipWidth -= 1;
+						entity.clipRect.width = _clipWidth;
 					}
 					else entity.distance = -1;
+					entity.clipRect.x -= 1;
+					entity.clipRect.width += 1;
 					entity.clipRect.height = viewport.height;
 				}
 			}
@@ -584,7 +581,7 @@ package
 				DestinationPoint.y = viewport.height / 2;
 				if (SourceZ == 0) DestinationPoint.y += map.texHeight * (_height / 2);
 				else if (SourceZ == map.texHeight) DestinationPoint.y -= map.texHeight * (_height / 2);
-				return 1 / _height;
+				return transformY / map.texHeight;
 			}
 			else 
 			{

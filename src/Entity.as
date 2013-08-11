@@ -21,8 +21,8 @@ package
 			width = 128;
 			height = 128;
 			
-			x = X * 128 - width / 2;
-			y = Y * 128 - height / 2;
+			x = X * 128 + width / 2;
+			y = Y * 128 + height / 2;
 			
 			viewPos = new FlxPoint(0, 0);
 			clipRect = new Rectangle(0, 0, width, height);
@@ -30,16 +30,35 @@ package
 			loadGraphic(imgSprites, true, false, 128, 128);
 			addAnimation("orb", [21]);
 			play("orb");
-			FlxG.watch(clipRect, "x");
-			FlxG.watch(clipRect, "width");
-			FlxG.watch(this, "distance");
-			FlxG.watch(this, "visible");
+		}
+		
+		override public function update():void
+		{
+			if (FlxG.keys.pressed("UP")) 
+			{
+				if (FlxG.keys.pressed("SHIFT")) y -= 1;
+				else y -= 8;
+			}
+			else if (FlxG.keys.pressed("DOWN"))
+			{
+				if (FlxG.keys.pressed("SHIFT")) y += 1;
+				else y += 8;
+			}
+			
+			if (FlxG.keys.pressed("LEFT"))
+			{
+				if (FlxG.keys.pressed("SHIFT")) x -= 1;
+				else x -= 8;
+			}
+			else if (FlxG.keys.pressed("RIGHT"))
+			{
+				if (FlxG.keys.pressed("SHIFT")) x += 1;
+				else x += 8;
+			}
 		}
 		
 		override public function draw():void
 		{
-			clipRect.x = 0;
-			clipRect.width = 128;
 			//super.draw();
 			if (distance == -1) return;
 			var _xx:Number = viewPos.x - width / 2;
@@ -90,47 +109,6 @@ package
 				if(FlxG.visualDebug && !ignoreDrawDebug)
 					drawDebug(camera);
 			}
-		}
-		
-		/*override protected function calcFrame():void
-		{
-			super.calcFrame();
-			var indexX:uint = _curIndex*frameWidth;
-			var indexY:uint = 0;
-			
-			//Handle sprite sheets
-			var widthHelper:uint = _flipped?_flipped:_pixels.width;
-			if(indexX >= widthHelper)
-			{
-				indexY = uint(indexX/widthHelper)*frameHeight;
-				indexX %= widthHelper;
-			}
-			//handle reversed sprites
-			//if(_flipped && (_facing == LEFT)) indexX = (_flipped<<1)-indexX-frameWidth;
-			_flashRect.x = 0;
-			_flashRect.y = 0;
-			_flashRect.width = width;
-			_flashRect.height = height;
-			framePixels.fillRect(_flashRect, 0x00000000);
-			//Update display bitmap
-			_flashRect.x = indexX + leftClip;
-			_flashRect.y = indexY;//
-			_flashRect.width = width - leftClip;// - rightClip;
-			_flashPoint.x = leftClip;
-			_flashPoint.y = 0;
-			framePixels.copyPixels(_pixels,_flashRect,_flashPoint);
-			_flashRect.x = _flashRect.y = 0;
-			if(_colorTransform != null)
-				framePixels.colorTransform(_flashRect,_colorTransform);
-			if(_callback != null)
-				_callback(((_curAnim != null)?(_curAnim.name):null),_curFrame,_curIndex);
-			dirty = false;
-		}*/
-		
-		override public function update():void
-		{
-			super.update();
-			
 		}
 	}
 }
