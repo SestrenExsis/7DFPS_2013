@@ -66,6 +66,7 @@ package
 		private var wallX:Number;
 		
 		private var showTriangleEdges:Boolean = false;
+		private var iterationsLeft:uint = 1;
 		private var aspectRatio:Number;
 		
 		private var zBuffer:Array;
@@ -138,8 +139,10 @@ package
 			viewport.fill(0xffffffff);
 			viewport.pixels.fillRect(ceilingRect, 0xff444444);
 			viewport.pixels.fillRect(floorRect, 0xff888888);
-			
-			if (FlxG.keys.justPressed("T")) showTriangleEdges = !showTriangleEdges;			
+			displayText.text = "";
+			if (FlxG.keys.justPressed("T")) showTriangleEdges = !showTriangleEdges;
+			if (FlxG.keys.justPressed("UP")) iterationsLeft += 1;
+			else if (FlxG.keys.justPressed("DOWN")) iterationsLeft -= 1;
 			drawViewWithFaces();
 		}
 		
@@ -157,6 +160,8 @@ package
 			map.orderTree = new Dictionary();
 			orderTreeMin = orderTreeMax = 0;
 			canvas.graphics.clear();
+			if (showTriangleEdges) canvas.graphics.lineStyle(1, 0x00ff00);
+			else canvas.graphics.lineStyle();
 			addFacesToBuffer(viewport.width);
 			
 			var _x:uint;
@@ -176,7 +181,6 @@ package
 			}
 
 			renderEntities();
-			canvas.graphics.lineStyle(1,0xffff00);
 			viewport.pixels.draw(canvas);
 		}
 		
@@ -265,6 +269,7 @@ package
 					sideDistY = (tileY + 1.0 - playerPosY) * deltaDistY;
 				}
 				//perform DDA
+				passedThroughTile(tileX, tileY);
 				do {//jump to next map square, OR in x-direction, OR in y-direction
 					if (sideDistX < sideDistY)
 					{
@@ -319,7 +324,7 @@ package
 				var _tileX:int = (player.pos.x / map.texWidth);
 				var _tileY:int = (player.pos.y / map.texHeight);
 				_face = Map.FLOOR;
-				if (map.vismap[_index] != _face) renderFloor(TileX, TileY);
+				if (map.vismap[_index] != _face) renderFloor(TileX, TileY, TileX + 1, TileY + 1, iterationsLeft);
 			}
 			else 
 			{
@@ -340,55 +345,126 @@ package
 			return _tile;
 		}
 		
-		private function renderFloor(TileX:uint, TileY:uint):void
+		private function renderFloor(StartTileX:Number, StartTileY:Number, EndTileX:Number, EndTileY:Number, IterationsLeft:uint = 2):void
 		{
 			var _pX:Number = player.pos.x / map.texWidth;
 			var _pY:Number = player.pos.y / map.texHeight;
-			var _tX:Number = TileX + 0.5;
-			var _tY:Number = TileY + 0.5;
+			var _tX:Number = 0.5 * (StartTileX + EndTileX);
+			var _tY:Number = 0.5 * (StartTileY + EndTileY);
 			
 			var _tileDistance:Number = Math.sqrt((_pX - _tX) * (_pX - _tX) + (_pY - _tY) * (_pY - _tY));
-			//if (_tileDistance > 6) return;
+			//if (_tileDistance < 0.2) return;
 			
 			//var _tileIsSelected:Boolean = (TileX == selectedTile.x) && (TileY == selectedTile.y);
-			var _render:Boolean = true;
+			var _badPt0:Boolean = false;
+			var _badPt1:Boolean = false;
+			var _badPt2:Boolean = false;
+			var _badPt3:Boolean = false;
+			var _badPointExists:Boolean = false;
+			var _ptDistance:Number = 0;
+			var _closestGoodPt:int = -1;
+			var _minDistance:Number = 10;
+			var _offScreenCount:uint = 0;
 			//distance to upper-left corner of tile
-			_pt.x = TileX * map.texWidth;
-			_pt.y = TileY * map.texHeight;
-			if (pointOnScreen(_pt.x, _pt.y, 0, floorPt0) == -1) _render = false;
-			if (!_render) return;
+			_pt.x = StartTileX * map.texWidth;
+			_pt.y = StartTileY * map.texHeight;
+			_ptDistance = projectPointToScreen(_pt.x, _pt.y, 0, floorPt0)
+			if (_ptDistance == -1)
+			{
+				_badPt0 = _badPointExists = true;
+			}
+			else if (_ptDistance < _minDistance)
+			{
+				_closestGoodPt = 0;
+				_minDistance = _ptDistance;
+			}
 			
 			//distance to upper-right corner of tile
-			_pt.x = (TileX + 1) * map.texWidth;
-			if (pointOnScreen(_pt.x, _pt.y, 0, floorPt1) == -1) _render = false;
-			if (!_render) return;
+			_pt.x = EndTileX * map.texWidth;
+			_ptDistance = projectPointToScreen(_pt.x, _pt.y, 0, floorPt1)
+			if (_ptDistance == -1)
+			{
+				_badPt1 = _badPointExists = true;
+			}
+			else if (_ptDistance < _minDistance)
+			{
+				_closestGoodPt = 1;
+				_minDistance = _ptDistance;
+			}
 			
 			//distance to lower-right corner of tile
-			_pt.y = (TileY + 1) * map.texHeight;
-			if (pointOnScreen(_pt.x, _pt.y, 0, floorPt3) == -1) _render = false;
-			if (!_render) return;
+			_pt.y = EndTileY * map.texHeight;
+			_ptDistance = projectPointToScreen(_pt.x, _pt.y, 0, floorPt3)
+			if (_ptDistance == -1)
+			{
+				_badPt3 = _badPointExists = true;
+			}
+			else if (_ptDistance < _minDistance)
+			{
+				_closestGoodPt = 3;
+				_minDistance = _ptDistance;
+			}
 			
 			//distance to lower-left corner of tile
-			_pt.x = TileX * map.texWidth;
-			if (pointOnScreen(_pt.x, _pt.y, 0, floorPt2) == -1) _render = false;
-			if (!_render) return;
+			_pt.x = StartTileX * map.texWidth;
+			_ptDistance = projectPointToScreen(_pt.x, _pt.y, 0, floorPt2)
+			if (_ptDistance == -1)
+			{
+				_badPt2 = _badPointExists = true;
+			}
+			else if (_ptDistance < _minDistance)
+			{
+				_closestGoodPt = 2;
+				_minDistance = _ptDistance;
+			}
 			
-			floorSourceRect.x = 0.1;
-			floorSourceRect.y = 0;
-			floorSourceRect.width = 0.2;
-			floorSourceRect.height = 0.25;
-			if (_render) drawPlaneToCanvas(floorPt0, floorPt1, floorPt2, floorPt3, floorSourceRect);
+			if (!isPointOnScreen(floorPt0) && !isPointOnScreen(floorPt1) && !isPointOnScreen(floorPt2) && !isPointOnScreen(floorPt3)) return;
 			
-			floorPt0.y = viewport.height - floorPt0.y;
-			floorPt1.y = viewport.height - floorPt1.y;
-			floorPt2.y = viewport.height - floorPt2.y;
-			floorPt3.y = viewport.height - floorPt3.y;
-			
-			floorSourceRect.x = 0.1;
-			floorSourceRect.y = 0.25;
-			floorSourceRect.width = 0.2;
-			floorSourceRect.height = 0.5;
-			if (_render) drawPlaneToCanvas(floorPt0, floorPt1, floorPt2, floorPt3, floorSourceRect);
+			if (_badPointExists)
+			{
+				if (_closestGoodPt == 0) _badPt0 = true;
+				else if (_closestGoodPt == 1) _badPt1 = true;
+				else if (_closestGoodPt == 2) _badPt2 = true;
+				else if (_closestGoodPt == 3) _badPt3 = true;
+
+				var _sX:Number = StartTileX;
+				var _sY:Number = StartTileY;
+				var _eX:Number = EndTileX;
+				var _eY:Number = EndTileY;
+				if 		(_badPt0 && _badPt1) _sY = 0.5 * (StartTileY + EndTileY);
+				else if (_badPt2 && _badPt3) _eY = 0.5 * (StartTileY + EndTileY);
+				if 		(_badPt0 && _badPt2) _sX = 0.5 * (StartTileX + EndTileX);
+				else if (_badPt1 && _badPt3) _eX = 0.5 * (StartTileX + EndTileX);
+				if (IterationsLeft > 0) 
+				{
+					displayText.text += "\n" + IterationsLeft + " " + StartTileX + " " + StartTileY + " " + EndTileX + " " + EndTileY;
+					displayText.text += "\n" + _closestGoodPt + " " + _badPt0 + " " + _badPt1 + " " + _badPt2 + " " + _badPt3;
+					renderFloor(_sX, _sY, _eX, _eY, IterationsLeft - 1);
+				}
+			}
+			else
+			{
+				var _startTexX:Number = 0.1 * (StartTileX - int(StartTileX));
+				var _startTexY:Number = 0.25 * (StartTileY - int(StartTileY));
+				var _endTexX:Number = 0.1 * (EndTileX - int(StartTileX));
+				var _endTexY:Number = 0.25 * (EndTileY - int(StartTileY));
+				floorSourceRect.x = 0.1 + _startTexX;
+				floorSourceRect.y = 0 + _startTexY;
+				floorSourceRect.width = 0.1 + _endTexX;
+				floorSourceRect.height = 0 + _endTexY;
+				drawPlaneToCanvas(floorPt0, floorPt1, floorPt2, floorPt3, floorSourceRect);
+				
+				floorPt0.y = viewport.height - floorPt0.y;
+				floorPt1.y = viewport.height - floorPt1.y;
+				floorPt2.y = viewport.height - floorPt2.y;
+				floorPt3.y = viewport.height - floorPt3.y;
+				
+				floorSourceRect.x = 0.1 + _startTexX;
+				floorSourceRect.y = 0.25 + _startTexY;
+				floorSourceRect.width = 0.1 + _endTexX;
+				floorSourceRect.height = 0.25 + _endTexY;
+				drawPlaneToCanvas(floorPt0, floorPt1, floorPt2, floorPt3, floorSourceRect);
+			}
 		}
 		
 		private function renderWall(TileX:uint, TileY:uint, Face:uint):void
@@ -415,7 +491,7 @@ package
 			if (Face == Map.EAST || Face == Map.SOUTH) _pt.y += map.texHeight;
 			
 			//distance to lower-left corner of face
-			if (pointOnScreen(_pt.x, _pt.y, map.texHeight, pt1) == -1) _render = false;
+			if (projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt1) == -1) _render = false;
 			pt3.x = pt1.x;
 			pt3.y = viewport.height - pt1.y;
 			
@@ -426,12 +502,9 @@ package
 			if (Face == Map.WEST || Face == Map.SOUTH) _pt.y += map.texHeight;
 			
 			//distance to lower-right corner of face
-			if (pointOnScreen(_pt.x, _pt.y, map.texHeight, pt0) == -1) _render = false;
+			if (projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt0) == -1) _render = false;
 			pt2.x = pt0.x;
 			pt2.y = viewport.height - pt0.y;
-			
-			if (showTriangleEdges) canvas.graphics.lineStyle(1, 0x00ff00);
-			else canvas.graphics.lineStyle();
 			
 			if (_render) drawPlaneToCanvas(pt0, pt1, pt2, pt3, sourceRect);
 		}
@@ -526,7 +599,7 @@ package
 				entity = entities.members[i];
 				if (entity.alive)
 				{
-					entity.distance = pointOnScreen(entity.x, entity.y, 64, entity.viewPos, entity.scale);
+					entity.distance = projectPointToScreen(entity.x, entity.y, 64, entity.viewPos, entity.scale);
 					if (entity.distance == -1) entity.visible = false;
 					
 					else entity.visible = true;
@@ -557,7 +630,7 @@ package
 			entities.sort("distance", DESCENDING);
 		}
 		
-		public function pointOnScreen(SourceX:Number, SourceY:Number, SourceZ:Number, DestinationPoint:FlxPoint, ScalePoint:FlxPoint = null):Number
+		public function projectPointToScreen(SourceX:Number, SourceY:Number, SourceZ:Number, DestinationPoint:FlxPoint, ScalePoint:FlxPoint = null):Number
 		{			
 			var planeX:Number = player.magView * player.view.x;
 			var planeY:Number = player.magView * player.view.y;
@@ -587,6 +660,12 @@ package
 			{
 				return -1;
 			}
+		}
+		
+		public function isPointOnScreen(Point:FlxPoint):Boolean
+		{
+			if (Point.x < 0 || Point.x > viewport.width || Point.y < 0 || Point.y > viewport.height) return false;
+			else return true;
 		}
 	}
 }
