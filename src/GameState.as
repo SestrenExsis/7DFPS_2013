@@ -168,7 +168,7 @@ package
 			var _y:uint;
 			var _index:int;
 			var _face:uint;
-			displayText.text = "";
+			//displayText.text = "";
 			for (var _order:int = orderTreeMin; _order <= orderTreeMax; _order++)
 			{
 				if (_order == 0) _order += 1;
@@ -178,7 +178,7 @@ package
 				_x = _index % map.widthInTiles;
 				_y = int(_index / map.widthInTiles);
 				renderWall(_x, _y, _face);
-				displayText.text += _order + " ";
+				//displayText.text += _order + " ";
 			}
 
 			renderEntities();
@@ -472,7 +472,7 @@ package
 		{
 			var _tileIndex:uint = map.getTile(TileX, TileY);
 			
-			sourceRect.x = 0.1 * int(_tileIndex % 10); //Math.round(sourceRect.x * 10) / 10;
+			sourceRect.x = 0.1 * int(_tileIndex % 10);
 			sourceRect.y = 0.25 * int(_tileIndex / 10);
 			sourceRect.width = sourceRect.x + 0.1;
 			sourceRect.height = sourceRect.y + 0.25;
@@ -484,7 +484,6 @@ package
 			}
 			
 			var _index:uint = TileX + TileY * map.widthInTiles;
-			var _render:Boolean = true;
 			var _ptDistance:Number = 0;
 			
 			//distance to upper-left corner of face
@@ -495,7 +494,7 @@ package
 			_ptDistance = projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt1)
 			if (_ptDistance == -1)
 			{
-				sourceRect.width -= 0.25 * 0.1;
+				sourceRect.width -= 0.025;//0.25 * 0.1;
 				if (Face == Map.NORTH) _pt.x += 0.25 * map.texWidth;
 				else if (Face == Map.EAST) _pt.y += 0.25 * map.texHeight;
 				else if (Face == Map.SOUTH) _pt.x -= 0.25 * map.texWidth;
@@ -503,7 +502,7 @@ package
 				_ptDistance = projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt1);
 				if (_ptDistance == -1)
 				{
-					sourceRect.width -= 0.25 * 0.1;
+					sourceRect.width -= 0.025;//0.25 * 0.1;
 					if (Face == Map.NORTH) _pt.x += 0.25 * map.texWidth;
 					else if (Face == Map.EAST) _pt.y += 0.25 * map.texHeight;
 					else if (Face == Map.SOUTH) _pt.x -= 0.25 * map.texWidth;
@@ -511,7 +510,7 @@ package
 					_ptDistance = projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt1);
 					if (_ptDistance == -1)
 					{
-						sourceRect.width -= 0.25 * 0.1;
+						sourceRect.width -= 0.025;//0.25 * 0.1;
 						if (Face == Map.NORTH) _pt.x += 0.25 * map.texWidth;
 						else if (Face == Map.EAST) _pt.y += 0.25 * map.texHeight;
 						else if (Face == Map.SOUTH) _pt.x -= 0.25 * map.texWidth;
@@ -520,6 +519,7 @@ package
 					}
 				}
 			}
+			if (_ptDistance == -1) return;
 			
 			//distance to lower-left corner of face
 			pt3.x = pt1.x;
@@ -533,7 +533,7 @@ package
 			_ptDistance = projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt0)
 			if (_ptDistance == -1)
 			{
-				if (_render) sourceRect.x += 0.25 * 0.1;
+				sourceRect.x += 0.025;//0.25 * 0.1;
 				if (Face == Map.NORTH) _pt.x -= 0.25 * map.texWidth;
 				else if (Face == Map.EAST) _pt.y -= 0.25 * map.texHeight;
 				else if (Face == Map.SOUTH) _pt.x += 0.25 * map.texWidth;
@@ -541,7 +541,7 @@ package
 				_ptDistance = projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt0);
 				if (_ptDistance == -1)
 				{
-					if (_render) sourceRect.x += 0.25 * 0.1;
+					sourceRect.x += 0.025;//0.25 * 0.1;
 					if (Face == Map.NORTH) _pt.x -= 0.25 * map.texWidth;
 					else if (Face == Map.EAST) _pt.y -= 0.25 * map.texHeight;
 					else if (Face == Map.SOUTH) _pt.x += 0.25 * map.texWidth;
@@ -549,7 +549,7 @@ package
 					_ptDistance = projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt0);
 					if (_ptDistance == -1)
 					{
-						if (_render) sourceRect.x += 0.25 * 0.1;
+						sourceRect.x += 0.025;//0.25 * 0.1;
 						if (Face == Map.NORTH) _pt.x -= 0.25 * map.texWidth;
 						else if (Face == Map.EAST) _pt.y -= 0.25 * map.texHeight;
 						else if (Face == Map.SOUTH) _pt.x += 0.25 * map.texWidth;
@@ -558,18 +558,19 @@ package
 					}
 				}
 			}
+			if (_ptDistance == -1) return;
 			
 			//distance to lower-right corner of face
 			pt2.x = pt0.x;
 			pt2.y = viewport.height - pt0.y;
 			
-			if (_render) drawPlaneToCanvas(pt0, pt1, pt2, pt3, sourceRect);
+			drawPlaneToCanvas(pt0, pt1, pt2, pt3, sourceRect);
 		}
 		
 		public function drawPlaneToCanvas(Point0:FlxPoint, Point1:FlxPoint, Point2:FlxPoint, Point3:FlxPoint, SourceRect:Rectangle):void
 		{
-			var _indentX:Number = 0;//1/128/10/4;
-			var _indentY:Number = 0;//1/128/4/2;
+			var _indentX:Number = 1/128/10/4;
+			var _indentY:Number = 1/128/4/4;
 			_point = intersect(Point0, Point1, Point2, Point3);
 			if (_point == null) return;
 			
@@ -591,10 +592,10 @@ package
 				Vector.<Number>([Point0.x, Point0.y, Point1.x, Point1.y, Point2.x, Point2.y, Point3.x, Point3.y]),
 				Vector.<int>([0, 1, 2, 1, 3, 2]),
 				Vector.<Number>([
-					SourceRect.x,		SourceRect.y,		(1/ll2)*f,
-					SourceRect.width,	SourceRect.y,		(1/lr2), 
-					SourceRect.x,		SourceRect.height,	(1/lr1),
-					SourceRect.width,	SourceRect.height,	(1/ll1)*f ]) // Magic
+					SourceRect.x - _indentX,		SourceRect.y,					(1/ll2)*f,
+					SourceRect.width - _indentX,	SourceRect.y,					(1/lr2), 
+					SourceRect.x - _indentX,		SourceRect.height - _indentY,	(1/lr1),
+					SourceRect.width - _indentX,	SourceRect.height - _indentY,	(1/ll1)*f ])
 			);
 		}
 		
