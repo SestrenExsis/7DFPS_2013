@@ -105,10 +105,10 @@ package
 			FlxG.camera.follow(player);
 
 			entities = new FlxGroup();
-			for (var i:uint = 0; i < 11; i++)
-				for (var j:uint = 0; j < 11; j++)
+			for (var i:uint = 0; i < 7; i++)
+				for (var j:uint = 0; j < 7; j++)
 				{
-					entities.add(new Entity(i * 2 + 1, j * 2 + 1));
+					entities.add(new Entity(i * 3 + 1, j * 3 + 1));
 				}
 			
 			map = new Map(canvas, player);
@@ -136,10 +136,10 @@ package
 						
 			FlxG.overlap(player, map, FlxObject.separate, playerHitsObject);
 			
-			viewport.fill(0xffffffff);
-			viewport.pixels.fillRect(ceilingRect, 0xff444444);
-			viewport.pixels.fillRect(floorRect, 0xff888888);
-			displayText.text = "";
+			viewport.fill(0xffff00ff);
+			//viewport.pixels.fillRect(ceilingRect, 0xff444444);
+			//viewport.pixels.fillRect(floorRect, 0xffff00ff);
+			//displayText.text = "";
 			if (FlxG.keys.justPressed("T")) showTriangleEdges = !showTriangleEdges;
 			if (FlxG.keys.justPressed("UP")) iterationsLeft += 1;
 			else if (FlxG.keys.justPressed("DOWN")) iterationsLeft -= 1;
@@ -324,7 +324,7 @@ package
 				var _tileX:int = (player.pos.x / map.texWidth);
 				var _tileY:int = (player.pos.y / map.texHeight);
 				_face = Map.FLOOR;
-				if (map.vismap[_index] != _face) renderFloor(TileX, TileY, TileX + 1, TileY + 1, iterationsLeft);
+				if (map.vismap[_index] != _face) renderFloor(TileX, TileY, TileX + 1, TileY + 1, 2);
 			}
 			else 
 			{
@@ -418,7 +418,7 @@ package
 				_minDistance = _ptDistance;
 			}
 			
-			if (!isPointOnScreen(floorPt0) && !isPointOnScreen(floorPt1) && !isPointOnScreen(floorPt2) && !isPointOnScreen(floorPt3)) return;
+			//if (!isPointOnScreen(floorPt0) && !isPointOnScreen(floorPt1) && !isPointOnScreen(floorPt2) && !isPointOnScreen(floorPt3)) return;
 			
 			if (_badPointExists)
 			{
@@ -431,14 +431,14 @@ package
 				var _sY:Number = StartTileY;
 				var _eX:Number = EndTileX;
 				var _eY:Number = EndTileY;
-				if 		(_badPt0 && _badPt1) _sY = 0.5 * (StartTileY + EndTileY);
-				else if (_badPt2 && _badPt3) _eY = 0.5 * (StartTileY + EndTileY);
-				if 		(_badPt0 && _badPt2) _sX = 0.5 * (StartTileX + EndTileX);
-				else if (_badPt1 && _badPt3) _eX = 0.5 * (StartTileX + EndTileX);
+				if 		(_badPt0 && _badPt1) _sY = StartTileY + 0.4 * (EndTileY - StartTileY);//0.5 * (StartTileY + EndTileY);
+				else if (_badPt2 && _badPt3) _eY = StartTileY + 0.6 * (EndTileY - StartTileY);
+				if 		(_badPt0 && _badPt2) _sX = StartTileX + 0.4 * (EndTileX - StartTileX);
+				else if (_badPt1 && _badPt3) _eX = StartTileX + 0.6 * (EndTileX - StartTileX);
 				if (IterationsLeft > 0) 
 				{
-					displayText.text += "\n" + IterationsLeft + " " + StartTileX + " " + StartTileY + " " + EndTileX + " " + EndTileY;
-					displayText.text += "\n" + _closestGoodPt + " " + _badPt0 + " " + _badPt1 + " " + _badPt2 + " " + _badPt3;
+					//displayText.text += "\n" + IterationsLeft + " " + StartTileX + " " + StartTileY + " " + EndTileX + " " + EndTileY;
+					//displayText.text += "\n" + _closestGoodPt + " " + _badPt0 + " " + _badPt1 + " " + _badPt2 + " " + _badPt3;
 					renderFloor(_sX, _sY, _eX, _eY, IterationsLeft - 1);
 				}
 			}
@@ -484,25 +484,78 @@ package
 			
 			var _index:uint = TileX + TileY * map.widthInTiles;
 			var _render:Boolean = true;
+			var _ptDistance:Number = 0;
+			
 			//distance to upper-left corner of face
 			_pt.x = TileX * map.texWidth;
 			_pt.y = TileY * map.texHeight;
-			if (Face == Map.NORTH || Face == Map.EAST) _pt.x += map.texWidth;
-			if (Face == Map.EAST || Face == Map.SOUTH) _pt.y += map.texHeight;
+			if (Face == Map.EAST || Face == Map.SOUTH) _pt.x += map.texWidth;
+			if (Face == Map.WEST || Face == Map.SOUTH) _pt.y += map.texHeight;
+			_ptDistance = projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt1)
+			if (_ptDistance == -1)
+			{
+				if (Face == Map.NORTH) _pt.x -= 0.25 * map.texWidth;
+				else if (Face == Map.EAST) _pt.y += 0.25 * map.texHeight;
+				else if (Face == Map.SOUTH) _pt.x -= 0.25 * map.texWidth;
+				else if (Face == Map.WEST) _pt.y -= 0.25 * map.texHeight;
+				_ptDistance = projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt1);
+				if (_ptDistance == -1)
+				{
+					if (Face == Map.NORTH) _pt.x -= 0.25 * map.texWidth;
+					else if (Face == Map.EAST) _pt.y += 0.25 * map.texHeight;
+					else if (Face == Map.SOUTH) _pt.x -= 0.25 * map.texWidth;
+					else if (Face == Map.WEST) _pt.y -= 0.25 * map.texHeight;
+					_ptDistance = projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt1);
+					if (_ptDistance == -1)
+					{
+						if (Face == Map.NORTH) _pt.x -= 0.25 * map.texWidth;
+						else if (Face == Map.EAST) _pt.y += 0.25 * map.texHeight;
+						else if (Face == Map.SOUTH) _pt.x -= 0.25 * map.texWidth;
+						else if (Face == Map.WEST) _pt.y -= 0.25 * map.texHeight;
+						_ptDistance = projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt1);
+					}
+				}
+			}
 			
 			//distance to lower-left corner of face
-			if (projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt1) == -1) _render = false;
 			pt3.x = pt1.x;
 			pt3.y = viewport.height - pt1.y;
 			
 			//distance to upper-right corner of face
 			_pt.x = TileX * map.texWidth;
 			_pt.y = TileY * map.texHeight;
-			if (Face == Map.EAST || Face == Map.SOUTH) _pt.x += map.texWidth;
-			if (Face == Map.WEST || Face == Map.SOUTH) _pt.y += map.texHeight;
+			if (Face == Map.NORTH || Face == Map.EAST) _pt.x += map.texWidth;
+			if (Face == Map.EAST || Face == Map.SOUTH) _pt.y += map.texHeight;
+			_ptDistance = projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt0)
+			if (_ptDistance == -1)
+			{
+				if (Face == Map.NORTH) _pt.x -= 0.25 * map.texWidth;
+				else if (Face == Map.EAST) _pt.y -= 0.25 * map.texHeight;
+				else if (Face == Map.SOUTH) _pt.x += 0.25 * map.texWidth;
+				else if (Face == Map.WEST) _pt.y += 0.25 * map.texHeight;
+				sourceRect.x += 0.25 * 0.1;
+				_ptDistance = projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt0);
+				if (_ptDistance == -1)
+				{
+					if (Face == Map.NORTH) _pt.x -= 0.25 * map.texWidth;
+					else if (Face == Map.EAST) _pt.y -= 0.25 * map.texHeight;
+					else if (Face == Map.SOUTH) _pt.x += 0.25 * map.texWidth;
+					else if (Face == Map.WEST) _pt.y += 0.25 * map.texHeight;
+					sourceRect.x += 0.25 * 0.1;
+					_ptDistance = projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt0);
+					if (_ptDistance == -1)
+					{
+						if (Face == Map.NORTH) _pt.x -= 0.25 * map.texWidth;
+						else if (Face == Map.EAST) _pt.y -= 0.25 * map.texHeight;
+						else if (Face == Map.SOUTH) _pt.x += 0.25 * map.texWidth;
+						else if (Face == Map.WEST) _pt.y += 0.25 * map.texHeight;
+						sourceRect.x += 0.25 * 0.1;
+						_ptDistance = projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt0);
+					}
+				}
+			}
 			
 			//distance to lower-right corner of face
-			if (projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt0) == -1) _render = false;
 			pt2.x = pt0.x;
 			pt2.y = viewport.height - pt0.y;
 			

@@ -35,8 +35,8 @@ package
 		{
 			super(X, Y);
 						
-			width = 32;
-			height = 32;
+			width = 64;
+			height = 64;
 			
 			x = X * 128 - width / 2;
 			y = Y * 128 - height / 2;
@@ -71,7 +71,7 @@ package
 		{
 			super.update();
 			
-			if (FlxG.keys["SHIFT"]) speedMultiplier = 0.05;
+			if (FlxG.keys["SHIFT"]) speedMultiplier = 0.1;
 			else speedMultiplier = 1;
 			
 			velocity.x = velocity.y = 0;
