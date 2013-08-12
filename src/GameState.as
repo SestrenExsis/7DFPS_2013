@@ -168,6 +168,7 @@ package
 			var _y:uint;
 			var _index:int;
 			var _face:uint;
+			displayText.text = "";
 			for (var _order:int = orderTreeMin; _order <= orderTreeMax; _order++)
 			{
 				if (_order == 0) _order += 1;
@@ -177,7 +178,7 @@ package
 				_x = _index % map.widthInTiles;
 				_y = int(_index / map.widthInTiles);
 				renderWall(_x, _y, _face);
-				//displayText.text += _order + " ";
+				displayText.text += _order + " ";
 			}
 
 			renderEntities();
@@ -494,21 +495,24 @@ package
 			_ptDistance = projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt1)
 			if (_ptDistance == -1)
 			{
-				if (Face == Map.NORTH) _pt.x -= 0.25 * map.texWidth;
+				sourceRect.width -= 0.25 * 0.1;
+				if (Face == Map.NORTH) _pt.x += 0.25 * map.texWidth;
 				else if (Face == Map.EAST) _pt.y += 0.25 * map.texHeight;
 				else if (Face == Map.SOUTH) _pt.x -= 0.25 * map.texWidth;
 				else if (Face == Map.WEST) _pt.y -= 0.25 * map.texHeight;
 				_ptDistance = projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt1);
 				if (_ptDistance == -1)
 				{
-					if (Face == Map.NORTH) _pt.x -= 0.25 * map.texWidth;
+					sourceRect.width -= 0.25 * 0.1;
+					if (Face == Map.NORTH) _pt.x += 0.25 * map.texWidth;
 					else if (Face == Map.EAST) _pt.y += 0.25 * map.texHeight;
 					else if (Face == Map.SOUTH) _pt.x -= 0.25 * map.texWidth;
 					else if (Face == Map.WEST) _pt.y -= 0.25 * map.texHeight;
 					_ptDistance = projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt1);
 					if (_ptDistance == -1)
 					{
-						if (Face == Map.NORTH) _pt.x -= 0.25 * map.texWidth;
+						sourceRect.width -= 0.25 * 0.1;
+						if (Face == Map.NORTH) _pt.x += 0.25 * map.texWidth;
 						else if (Face == Map.EAST) _pt.y += 0.25 * map.texHeight;
 						else if (Face == Map.SOUTH) _pt.x -= 0.25 * map.texWidth;
 						else if (Face == Map.WEST) _pt.y -= 0.25 * map.texHeight;
@@ -529,27 +533,27 @@ package
 			_ptDistance = projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt0)
 			if (_ptDistance == -1)
 			{
+				if (_render) sourceRect.x += 0.25 * 0.1;
 				if (Face == Map.NORTH) _pt.x -= 0.25 * map.texWidth;
 				else if (Face == Map.EAST) _pt.y -= 0.25 * map.texHeight;
 				else if (Face == Map.SOUTH) _pt.x += 0.25 * map.texWidth;
 				else if (Face == Map.WEST) _pt.y += 0.25 * map.texHeight;
-				sourceRect.x += 0.25 * 0.1;
 				_ptDistance = projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt0);
 				if (_ptDistance == -1)
 				{
+					if (_render) sourceRect.x += 0.25 * 0.1;
 					if (Face == Map.NORTH) _pt.x -= 0.25 * map.texWidth;
 					else if (Face == Map.EAST) _pt.y -= 0.25 * map.texHeight;
 					else if (Face == Map.SOUTH) _pt.x += 0.25 * map.texWidth;
 					else if (Face == Map.WEST) _pt.y += 0.25 * map.texHeight;
-					sourceRect.x += 0.25 * 0.1;
 					_ptDistance = projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt0);
 					if (_ptDistance == -1)
 					{
+						if (_render) sourceRect.x += 0.25 * 0.1;
 						if (Face == Map.NORTH) _pt.x -= 0.25 * map.texWidth;
 						else if (Face == Map.EAST) _pt.y -= 0.25 * map.texHeight;
 						else if (Face == Map.SOUTH) _pt.x += 0.25 * map.texWidth;
 						else if (Face == Map.WEST) _pt.y += 0.25 * map.texHeight;
-						sourceRect.x += 0.25 * 0.1;
 						_ptDistance = projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt0);
 					}
 				}
@@ -587,10 +591,10 @@ package
 				Vector.<Number>([Point0.x, Point0.y, Point1.x, Point1.y, Point2.x, Point2.y, Point3.x, Point3.y]),
 				Vector.<int>([0, 1, 2, 1, 3, 2]),
 				Vector.<Number>([
-					SourceRect.x - _indentX,		SourceRect.y,					(1/ll2)*f,
-					SourceRect.width - _indentX,	SourceRect.y,					(1/lr2), 
-					SourceRect.x - _indentX,		SourceRect.height - _indentY,	(1/lr1),
-					SourceRect.width - _indentX,	SourceRect.height - _indentY,	(1/ll1)*f ]) // Magic
+					SourceRect.x,		SourceRect.y,		(1/ll2)*f,
+					SourceRect.width,	SourceRect.y,		(1/lr2), 
+					SourceRect.x,		SourceRect.height,	(1/lr1),
+					SourceRect.width,	SourceRect.height,	(1/ll1)*f ]) // Magic
 			);
 		}
 		
