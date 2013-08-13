@@ -22,27 +22,27 @@ package
 		public function Entity(X:Number = 22, Y:Number = 12.5, Type:uint = 0)
 		{
 			super(X, Y);
-						
+			
+			loadGraphic(imgSprites, true, false, 128, 128);
+			addAnimation("orb", [21]);
+			addAnimation("tippytoe_walk", [40, 41], 4, true);
+			addAnimation("tippytoe_idle", [41]);
+			
 			type = Type;
 			width = 48;
 			height = 48;
 			solid = true;
 			elasticity = 0;
 			
-			x = X * 128 + width / 2;
-			y = Y * 128 + height / 2;
-			
 			_pos = new FlxPoint(0, 0);
 			viewPos = new FlxPoint(0, 0);
-			clipRect = new Rectangle(0, 0, width, height);
+			clipRect = new Rectangle(0, 0, frameWidth, frameHeight);
 			timer = new FlxTimer();
 			moveSpeed = 9 * 128;
 			drag.x = drag.y = 48 * 128;
 			
-			loadGraphic(imgSprites, true, false, 128, 128);
-			addAnimation("orb", [21]);
-			addAnimation("tippytoe_walk", [40, 41], 4, true);
-			addAnimation("tippytoe_idle", [41]);
+			x = X * 128 + width / 2;
+			y = Y * 128 + height / 2;
 			
 			if (type == 0)
 			{
@@ -60,8 +60,8 @@ package
 			{
 				play("tippytoe_walk");
 				var _ang:Number = FlxU.getAngle(pos, target.pos) + 270;
-				if (_curFrame == 1) _ang -= 15;
-				else _ang += 15;
+				if (_curFrame == 1) _ang -= 20;
+				else _ang += 20;
 				_ang = toRadians(_ang);
 				velocity.x = moveSpeed * Math.cos(_ang);
 				velocity.y = moveSpeed * Math.sin(_ang);
@@ -87,8 +87,8 @@ package
 		override public function draw():void
 		{
 			if (distance == -1) return;
-			var _xx:Number = viewPos.x - width / 2;
-			var _yy:Number = viewPos.y - height / 2;
+			var _xx:Number = viewPos.x - frameWidth / 2;
+			var _yy:Number = viewPos.y - frameHeight / 2;
 			
 			if(_flickerTimer != 0)
 			{

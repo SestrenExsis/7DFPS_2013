@@ -56,13 +56,13 @@ package
 		
 		override public function draw():void
 		{
-			//super.draw();
+			super.draw();
 		}
 		
 		override public function update():void
 		{
 			super.update();
-			
+			visible = FlxG.visualDebug;
 			if (FlxG.keys["SHIFT"]) speedMultiplier = 0.1;
 			else speedMultiplier = 1;
 			
@@ -90,7 +90,7 @@ package
 				velocity.x += view.x * moveSpeed * speedMultiplier;
 				velocity.y += view.y * moveSpeed * speedMultiplier;
 			}
-			
+						
 			if (angle < 0) angle += 360;
 			
 			if (FlxG.keys["A"]) //rotate to the right

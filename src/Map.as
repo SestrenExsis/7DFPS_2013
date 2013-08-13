@@ -39,7 +39,7 @@ package
 			
 			textures = new FlxSprite();
 			textures.loadGraphic(imgWalls);
-			visible = false;
+			//visible = false;
 			FlxG.worldBounds.make(0, 0, width, height);
 			
 			vismap = new Dictionary();
@@ -51,12 +51,14 @@ package
 		override public function update():void
 		{
 			super.update();
+			
+			visible = FlxG.visualDebug;
 			//planes.sort(sortByDistance);
 		}
 		
 		override public function draw():void
 		{
-			//super.draw();
+			super.draw();
 		}
 	}
 }

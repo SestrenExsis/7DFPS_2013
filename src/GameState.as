@@ -23,7 +23,7 @@ package
 	{
 		[Embed(source="../assets/images/FlixelFPS_Spritemap.png")] protected static var imgWalls:Class;
 		
-		private static var zoomLevel:Number = 0.25;
+		private static var zoomLevel:Number = 1;
 		
 		private var sourceRect:Rectangle;
 		private var floorSourceRect:Rectangle;
@@ -145,7 +145,7 @@ package
 			super.update();
 						
 			FlxG.overlap(meta, map, FlxObject.separate);
-			FlxG.overlap(player, entities, FlxObject.separate);
+			FlxG.overlap(meta, meta, objectsCollide, circularCollisionCheck);
 			
 			viewport.fill(0xff000000);
 			viewport.pixels.fillRect(ceilingRect, 0xff444444);
@@ -157,7 +157,25 @@ package
 			drawViewWithFaces();
 		}
 		
-		private function objectsCollide(Object1:FlxObject,Object2:FlxObject):Boolean
+		private function objectsCollide(Object1:FlxObject,Object2:FlxObject):void
+		{
+			if (FlxObject.separateX(Object1, Object2)) 
+			{
+				Object1.velocity.x = 0;
+				Object1.x = Object1.last.x;
+				Object2.velocity.x = 0;
+				Object2.x = Object2.last.x;
+			}
+			if (FlxObject.separateY(Object1, Object2)) 
+			{
+				Object1.velocity.y = 0;
+				Object1.y = Object1.last.y;
+				Object2.velocity.y = 0;
+				Object2.y = Object2.last.y;
+			}
+		}
+		
+		private function circularCollisionCheck(Object1:FlxObject,Object2:FlxObject):Boolean
 		{
 			var _xx:Number = Object1.x + 0.5 * Object1.width - (Object2.x + 0.5 * Object2.width);
 			var _yy:Number = Object1.y + 0.5 * Object1.height - (Object2.y + 0.5 * Object2.height);
@@ -657,9 +675,6 @@ package
 			var _rightEdge:int;
 			var _width:int;
 			
-			var gfx:Graphics = FlxG.flashGfx;
-			gfx.clear();
-			
 			for (var i:uint = 0; i < entities.length; i++)
 			{
 				entity = entities.members[i];
@@ -691,22 +706,9 @@ package
 					entity.clipRect.x -= 1;
 					entity.clipRect.width += 1;
 					entity.clipRect.height = viewport.height;
-					
-					//debug drawing
-					//var _xx:Number = 0.5 * FlxG.width + zoomLevel * (entity.x + 0.5 * entity.width - player.pos.x);
-					//var _yy:Number = 0.5 * FlxG.height + zoomLevel * (entity.y + 0.5 * entity.height - player.pos.y);
-					//gfx.lineStyle(1, 0xff0000, 1);
-					//gfx.drawCircle(_xx, _yy, entity.width * zoomLevel);
 				}
 			}
 			entities.sort("distance", DESCENDING);
-			
-			//debug drawing
-			//var _ww:Number = 0.5 * player.width * zoomLevel;
-			//gfx.lineStyle(2, 0x00ff00, 1);
-			//gfx.drawCircle(0.5 * FlxG.width, 0.5 * FlxG.height, _ww);
-			//gfx.moveTo(0.5 * FlxG.width - player.dir.x * player.magDir * _ww, 0.5 * FlxG.height + player.dir.y * player.magDir * _ww);
-			//gfx.lineTo(0.5 * FlxG.width, 0.5 * FlxG.height);	
 		}
 		
 		public function projectPointToScreen(SourceX:Number, SourceY:Number, SourceZ:Number, DestinationPoint:FlxPoint, ScalePoint:FlxPoint = null):Number
