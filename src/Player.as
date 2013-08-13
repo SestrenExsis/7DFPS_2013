@@ -24,7 +24,6 @@ package
 		public var moveSpeed:Number = 5.0 * 128; //the constant value is in tiles/second
 		public var rotSpeed:Number = 3.0; //the constant value is in radians/second
 		public var speedMultiplier:Number = 1.0;
-		public var zoomLevel:Number = 1;
 		protected var _fov:Number = 66 * (Math.PI / 180);
 		
 		public var magDir:Number = 0;
@@ -37,6 +36,7 @@ package
 						
 			width = 64;
 			height = 64;
+			solid = true;
 			
 			x = X * 128 - width / 2;
 			y = Y * 128 - height / 2;
@@ -51,20 +51,12 @@ package
 			_pos = new FlxPoint();
 			
 			_rayDir = new FlxPoint();
-			visible = false;
+			//visible = false;
 		}
 		
 		override public function draw():void
 		{
 			//super.draw();
-			/*var gfx:Graphics = FlxG.flashGfx;
-			gfx.clear();
-			gfx.lineStyle(1, 0x00ff00, 1);
-			gfx.drawCircle(FlxG.width / 2, FlxG.height / 2, 16 * zoomLevel);
-			gfx.moveTo(FlxG.width / 2 + dir.x * magDir, FlxG.height / 2 + dir.y * magDir);
-			gfx.lineTo(FlxG.width / 2, FlxG.height / 2);
-			
-			FlxG.camera.buffer.draw(FlxG.flashGfxSprite);*/
 		}
 		
 		override public function update():void

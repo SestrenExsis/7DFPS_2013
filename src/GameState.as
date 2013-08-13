@@ -23,6 +23,8 @@ package
 	{
 		[Embed(source="../assets/images/FlixelFPS_Spritemap.png")] protected static var imgWalls:Class;
 		
+		private static var zoomLevel:Number = 0.25;
+		
 		private var sourceRect:Rectangle;
 		private var floorSourceRect:Rectangle;
 		private var destRect:Rectangle;
@@ -36,6 +38,7 @@ package
 		private var map:Map;
 		private var entities:FlxGroup;
 		private var entity:Entity;
+		private var meta:FlxGroup;
 		
 		//for drawing triangles
 		private var canvas:Sprite;
@@ -105,10 +108,12 @@ package
 			FlxG.camera.follow(player);
 
 			entities = new FlxGroup();
-			for (var i:uint = 0; i < 7; i++)
-				for (var j:uint = 0; j < 7; j++)
+			for (var i:uint = 0; i < 1; i++)
+				for (var j:uint = 0; j < 2; j++)
 				{
-					entities.add(new Entity(i * 3 + 1, j * 3 + 1));
+					entity = new Entity(i * 8 + 12, j * 8 + 12);
+					entity.target = player;
+					entities.add(entity);
 				}
 			
 			map = new Map(canvas, player);
@@ -123,9 +128,14 @@ package
 			
 			add(viewport);
 			add(map);
-			add(player);
-			add(entities);
+			//add(player);
+			//add(entities);
 			add(displayText);
+			
+			meta = new FlxGroup();
+			meta.add(player);
+			meta.add(entities);
+			add(meta);
 			
 			zBuffer = new Array(viewport.width);
 		}
@@ -134,11 +144,12 @@ package
 		{	
 			super.update();
 						
-			FlxG.overlap(player, map, FlxObject.separate, playerHitsObject);
+			FlxG.overlap(meta, map, FlxObject.separate);
+			FlxG.overlap(player, entities, FlxObject.separate);
 			
-			viewport.fill(0xffff00ff);
-			//viewport.pixels.fillRect(ceilingRect, 0xff444444);
-			//viewport.pixels.fillRect(floorRect, 0xffff00ff);
+			viewport.fill(0xff000000);
+			viewport.pixels.fillRect(ceilingRect, 0xff444444);
+			viewport.pixels.fillRect(floorRect, 0xffff00ff);
 			//displayText.text = "";
 			if (FlxG.keys.justPressed("T")) showTriangleEdges = !showTriangleEdges;
 			if (FlxG.keys.justPressed("UP")) iterationsLeft += 1;
@@ -146,9 +157,13 @@ package
 			drawViewWithFaces();
 		}
 		
-		private function playerHitsObject(Object1:FlxObject,Object2:FlxObject):Boolean
+		private function objectsCollide(Object1:FlxObject,Object2:FlxObject):Boolean
 		{
-			return true;
+			var _xx:Number = Object1.x + 0.5 * Object1.width - (Object2.x + 0.5 * Object2.width);
+			var _yy:Number = Object1.y + 0.5 * Object1.height - (Object2.y + 0.5 * Object2.height);
+			
+			if (Math.sqrt(_xx * _xx + _yy * _yy) < 0.5 * (Object1.width + Object2.width)) return true;
+			else return false;
 		}
 		
 		private function drawViewWithFaces():void
@@ -436,19 +451,14 @@ package
 				else if (_badPt2 && _badPt3) _eY = StartTileY + 0.6 * (EndTileY - StartTileY);
 				if 		(_badPt0 && _badPt2) _sX = StartTileX + 0.4 * (EndTileX - StartTileX);
 				else if (_badPt1 && _badPt3) _eX = StartTileX + 0.6 * (EndTileX - StartTileX);
-				if (IterationsLeft > 0) 
-				{
-					//displayText.text += "\n" + IterationsLeft + " " + StartTileX + " " + StartTileY + " " + EndTileX + " " + EndTileY;
-					//displayText.text += "\n" + _closestGoodPt + " " + _badPt0 + " " + _badPt1 + " " + _badPt2 + " " + _badPt3;
-					renderFloor(_sX, _sY, _eX, _eY, IterationsLeft - 1);
-				}
+				if (IterationsLeft > 0) renderFloor(_sX, _sY, _eX, _eY, IterationsLeft - 1);
 			}
 			else
 			{
 				var _startTexX:Number = 0.1 * (StartTileX - int(StartTileX));
-				var _startTexY:Number = 0.25 * (StartTileY - int(StartTileY));
+				var _startTexY:Number = 0.1 * (StartTileY - int(StartTileY));
 				var _endTexX:Number = 0.1 * (EndTileX - int(StartTileX));
-				var _endTexY:Number = 0.25 * (EndTileY - int(StartTileY));
+				var _endTexY:Number = 0.1 * (EndTileY - int(StartTileY));
 				floorSourceRect.x = 0.1 + _startTexX;
 				floorSourceRect.y = 0 + _startTexY;
 				floorSourceRect.width = 0.1 + _endTexX;
@@ -461,9 +471,9 @@ package
 				floorPt3.y = viewport.height - floorPt3.y;
 				
 				floorSourceRect.x = 0.1 + _startTexX;
-				floorSourceRect.y = 0.25 + _startTexY;
+				floorSourceRect.y = 0.1 + _startTexY;
 				floorSourceRect.width = 0.1 + _endTexX;
-				floorSourceRect.height = 0.25 + _endTexY;
+				floorSourceRect.height = 0.1 + _endTexY;
 				drawPlaneToCanvas(floorPt0, floorPt1, floorPt2, floorPt3, floorSourceRect);
 			}
 		}
@@ -473,14 +483,14 @@ package
 			var _tileIndex:uint = map.getTile(TileX, TileY);
 			
 			sourceRect.x = 0.1 * int(_tileIndex % 10);
-			sourceRect.y = 0.25 * int(_tileIndex / 10);
+			sourceRect.y = 0.1 * int(_tileIndex / 10);
 			sourceRect.width = sourceRect.x + 0.1;
-			sourceRect.height = sourceRect.y + 0.25;
+			sourceRect.height = sourceRect.y + 0.1;
 			
 			if (Face == Map.NORTH || Face == Map.SOUTH)
 			{
-				sourceRect.y += 0.25;
-				sourceRect.height += 0.25;
+				sourceRect.y += 0.1;
+				sourceRect.height += 0.1;
 			}
 			
 			var _index:uint = TileX + TileY * map.widthInTiles;
@@ -629,12 +639,6 @@ package
 			return _intersect;
 		}
 		
-		public function toRadians(Degrees:Number):Number
-		{
-			var _rad:Number = Math.abs(Degrees % 360) % 360;
-			return _rad * (Math.PI / 180);
-		}
-		
 		public function renderEntities():void
 		{
 			var planeX:Number = 0.66 * player.view.x;
@@ -652,6 +656,10 @@ package
 			var _leftEdge:int;
 			var _rightEdge:int;
 			var _width:int;
+			
+			var gfx:Graphics = FlxG.flashGfx;
+			gfx.clear();
+			
 			for (var i:uint = 0; i < entities.length; i++)
 			{
 				entity = entities.members[i];
@@ -661,7 +669,7 @@ package
 					if (entity.distance == -1) entity.visible = false;
 					
 					else entity.visible = true;
-					_width = entity.width * entity.scale.x;
+					_width = entity.frameWidth * entity.scale.x;
 					
 					_leftEdge = entity.viewPos.x - 0.5 * _width;
 					if (_leftEdge < 0) _leftEdge = 0;
@@ -683,9 +691,22 @@ package
 					entity.clipRect.x -= 1;
 					entity.clipRect.width += 1;
 					entity.clipRect.height = viewport.height;
+					
+					//debug drawing
+					//var _xx:Number = 0.5 * FlxG.width + zoomLevel * (entity.x + 0.5 * entity.width - player.pos.x);
+					//var _yy:Number = 0.5 * FlxG.height + zoomLevel * (entity.y + 0.5 * entity.height - player.pos.y);
+					//gfx.lineStyle(1, 0xff0000, 1);
+					//gfx.drawCircle(_xx, _yy, entity.width * zoomLevel);
 				}
 			}
 			entities.sort("distance", DESCENDING);
+			
+			//debug drawing
+			//var _ww:Number = 0.5 * player.width * zoomLevel;
+			//gfx.lineStyle(2, 0x00ff00, 1);
+			//gfx.drawCircle(0.5 * FlxG.width, 0.5 * FlxG.height, _ww);
+			//gfx.moveTo(0.5 * FlxG.width - player.dir.x * player.magDir * _ww, 0.5 * FlxG.height + player.dir.y * player.magDir * _ww);
+			//gfx.lineTo(0.5 * FlxG.width, 0.5 * FlxG.height);	
 		}
 		
 		public function projectPointToScreen(SourceX:Number, SourceY:Number, SourceZ:Number, DestinationPoint:FlxPoint, ScalePoint:FlxPoint = null):Number

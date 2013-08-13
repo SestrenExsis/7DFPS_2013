@@ -8,58 +8,84 @@ package
 	public class Entity extends FlxSprite
 	{
 		[Embed(source="../assets/images/FlixelFPS_Spritemap.png")] protected static var imgSprites:Class;
+		protected var _pos:FlxPoint;
+		public var target:Player;
 		
 		public var distance:Number = 0;
 		public var viewPos:FlxPoint;
 		public var clipRect:Rectangle;
+		public var moveSpeed:Number;
+		public var timer:FlxTimer;
+		public var type:uint;
 		//public var posZ:Number = 0; //0 means the bottom of the sprite rests on the ground
 		
-		public function Entity(X:Number = 22, Y:Number = 12.5)
+		public function Entity(X:Number = 22, Y:Number = 12.5, Type:uint = 0)
 		{
 			super(X, Y);
 						
-			width = 128;
-			height = 128;
+			type = Type;
+			width = 48;
+			height = 48;
+			solid = true;
+			elasticity = 0;
 			
 			x = X * 128 + width / 2;
 			y = Y * 128 + height / 2;
 			
+			_pos = new FlxPoint(0, 0);
 			viewPos = new FlxPoint(0, 0);
 			clipRect = new Rectangle(0, 0, width, height);
+			timer = new FlxTimer();
+			moveSpeed = 9 * 128;
+			drag.x = drag.y = 48 * 128;
 			
 			loadGraphic(imgSprites, true, false, 128, 128);
 			addAnimation("orb", [21]);
-			play("orb");
+			addAnimation("tippytoe_walk", [40, 41], 4, true);
+			addAnimation("tippytoe_idle", [41]);
+			
+			if (type == 0)
+			{
+				play("tippytoe_idle");
+				color = 0xe4edb3;
+				timer.start(0.25 * FlxG.random(), 1, onTimerMove);
+			}
+		}
+		
+		public function onTimerMove(Timer:FlxTimer):void
+		{
+			Timer.start(0.25, 1, onTimerMove);
+			if (target == null) return;
+			if (FlxU.getDistance(pos, target.pos) < 128 * 8)
+			{
+				play("tippytoe_walk");
+				var _ang:Number = FlxU.getAngle(pos, target.pos) + 270;
+				if (_curFrame == 1) _ang -= 15;
+				else _ang += 15;
+				_ang = toRadians(_ang);
+				velocity.x = moveSpeed * Math.cos(_ang);
+				velocity.y = moveSpeed * Math.sin(_ang);
+			}
+			else play("tippytoe_idle");
+		}
+		
+		public function toRadians(Degrees:Number):Number
+		{
+			var _rad:Number = Math.abs((Degrees + 360) % 360) % 360;
+			return _rad * (Math.PI / 180);
 		}
 		
 		override public function update():void
 		{
-			if (FlxG.keys.pressed("UP")) 
-			{
-				if (FlxG.keys.pressed("SHIFT")) y -= 1;
-				else y -= 8;
-			}
-			else if (FlxG.keys.pressed("DOWN"))
-			{
-				if (FlxG.keys.pressed("SHIFT")) y += 1;
-				else y += 8;
-			}
+			if (FlxG.keys.pressed("UP")) velocity.y = -moveSpeed;
+			else if (FlxG.keys.pressed("DOWN")) velocity.y = moveSpeed;
 			
-			if (FlxG.keys.pressed("LEFT"))
-			{
-				if (FlxG.keys.pressed("SHIFT")) x -= 1;
-				else x -= 8;
-			}
-			else if (FlxG.keys.pressed("RIGHT"))
-			{
-				if (FlxG.keys.pressed("SHIFT")) x += 1;
-				else x += 8;
-			}
+			if (FlxG.keys.pressed("LEFT")) velocity.x = -moveSpeed;
+			else if (FlxG.keys.pressed("RIGHT")) velocity.x = moveSpeed;
 		}
 		
 		override public function draw():void
 		{
-			//super.draw();
 			if (distance == -1) return;
 			var _xx:Number = viewPos.x - width / 2;
 			var _yy:Number = viewPos.y - height / 2;
@@ -109,6 +135,13 @@ package
 				if(FlxG.visualDebug && !ignoreDrawDebug)
 					drawDebug(camera);
 			}
+		}
+		
+		public function get pos():FlxPoint
+		{
+			_pos.x = x + width / 2;
+			_pos.y = y + height / 2;
+			return _pos;
 		}
 	}
 }
