@@ -69,7 +69,7 @@ package
 		private var wallX:Number;
 		
 		private var showTriangleEdges:Boolean = false;
-		private var iterationsLeft:uint = 1;
+		private var useVertexDictionary:Boolean = true;
 		private var aspectRatio:Number;
 		
 		private var zBuffer:Array;
@@ -152,8 +152,10 @@ package
 			viewport.pixels.fillRect(floorRect, 0xffff00ff);
 			//displayText.text = "";
 			if (FlxG.keys.justPressed("T")) showTriangleEdges = !showTriangleEdges;
-			if (FlxG.keys.justPressed("UP")) iterationsLeft += 1;
-			else if (FlxG.keys.justPressed("DOWN")) iterationsLeft -= 1;
+			if (FlxG.keys.justPressed("Y")) 
+			{
+				useVertexDictionary = !useVertexDictionary;
+			}
 			drawViewWithFaces();
 		}
 		
@@ -186,9 +188,6 @@ package
 		
 		private function drawViewWithFaces():void
 		{
-			//displayText.text = "";
-			map.vertexMapX = new Dictionary();
-			map.vertexMapY = new Dictionary();
 			map.vismap = new Dictionary();
 			map.orderTree = new Dictionary();
 			orderTreeMin = orderTreeMax = 0;
@@ -201,7 +200,6 @@ package
 			var _y:uint;
 			var _index:int;
 			var _face:uint;
-			//displayText.text = "";
 			for (var _order:int = orderTreeMin; _order <= orderTreeMax; _order++)
 			{
 				if (_order == 0) _order += 1;
@@ -211,7 +209,6 @@ package
 				_x = _index % map.widthInTiles;
 				_y = int(_index / map.widthInTiles);
 				renderWall(_x, _y, _face);
-				//displayText.text += _order + " ";
 			}
 
 			renderEntities();
@@ -220,8 +217,10 @@ package
 		
 		private function addFacesToBuffer(SearchResolution:uint):void
 		{
+			//****************************************************************************
 			//A lot of this code is borrowed from http://lodev.org/cgtutor/raycasting.html.
 			//Many thanks to them for the great tutorial.
+			//****************************************************************************
 			
 			//x-coordinate in camera space
 			var cameraX:Number;
@@ -231,36 +230,28 @@ package
 			//length of ray from one x or y-side to next x or y-side
 			var deltaDistX:Number;
 			var deltaDistY:Number;
-			
 			var perpWallDist:Number;
-			
 			//what direction to step in x or y-direction (either +1 or -1)
 			var stepX:int;
 			var stepY:int;
 			//var side:int; //was a NS or a EW wall hit?
-			
 			var lineHeight:int;
 			var drawStart:int;
 			var drawEnd:int;
 			var texNum:int;
-			
 			//var wallX:Number; //where exactly the wall was hit
 			var texX:Number;
 			//var texY:int;
 			var color:uint;
 			var y:int;
-			
 			var playerPosX:Number;
 			var playerPosY:Number;
-			
 			var tileX:int;
 			var tileY:int;
-			
 			//used to combine strips for a drawTriangles() call
 			var lastTileX:int = -1;
 			var lastTileY:int = -1;
 			var lastSide:int = -1;
-			
 			var lastWallDistance:Number;
 			var wallDistance:Number;
 			
@@ -680,7 +671,7 @@ package
 				entity = entities.members[i];
 				if (entity.alive)
 				{
-					entity.distance = projectPointToScreen(entity.x, entity.y, 64, entity.viewPos, entity.scale);
+					entity.distance = projectPointToScreen(entity.x, entity.y, 64, entity.viewPos, entity);
 					if (entity.distance == -1) entity.visible = false;
 					
 					else entity.visible = true;
@@ -711,8 +702,8 @@ package
 			entities.sort("distance", DESCENDING);
 		}
 		
-		public function projectPointToScreen(SourceX:Number, SourceY:Number, SourceZ:Number, DestinationPoint:FlxPoint, ScalePoint:FlxPoint = null):Number
-		{			
+		public function projectPointToScreen(SourceX:Number, SourceY:Number, SourceZ:Number, DestinationPoint:FlxPoint, GameEntity:Entity = null):Number
+		{
 			var planeX:Number = player.magView * player.view.x;
 			var planeY:Number = player.magView * player.view.y;
 			var invDet:Number = 1.0 / (planeX * player.dir.y - player.dir.x * planeY);
@@ -727,12 +718,9 @@ package
 			if (transformY > 0)
 			{
 				DestinationPoint.x = int((viewport.width / 2) * (1 + transformX / transformY));
-				if (ScalePoint) 
-				{
-					ScalePoint.x = ScalePoint.y = Math.abs(_height);
-				}
-				
 				DestinationPoint.y = viewport.height / 2;
+				
+				if (GameEntity) GameEntity.scale.x = GameEntity.scale.y = Math.abs(_height);
 				if (SourceZ == 0) DestinationPoint.y += map.texHeight * (_height / 2);
 				else if (SourceZ == map.texHeight) DestinationPoint.y -= map.texHeight * (_height / 2);
 				return transformY / map.texHeight;

@@ -28,8 +28,6 @@ package
 		
 		public var vismap:Dictionary;
 		public var orderTree:Dictionary;
-		public var vertexMapX:Dictionary;
-		public var vertexMapY:Dictionary;
 				
 		public function Map(Canvas:Sprite, Plyr:Player)
 		{
@@ -44,8 +42,6 @@ package
 			
 			vismap = new Dictionary();
 			orderTree = new Dictionary();
-			vertexMapX = new Dictionary();
-			vertexMapY = new Dictionary();
 		}
 		
 		override public function update():void
