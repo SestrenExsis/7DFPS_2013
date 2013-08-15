@@ -30,7 +30,7 @@ package
 		public var magView:Number = 0;
 		public var angView:Number = 0;
 		
-		public function Player(X:Number = 22, Y:Number = 12.5)
+		public function Player(X:Number = 2, Y:Number = 2)
 		{
 			super(X, Y);
 						

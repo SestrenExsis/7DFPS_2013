@@ -71,6 +71,7 @@ package
 		private var showTriangleEdges:Boolean = false;
 		private var useVertexDictionary:Boolean = true;
 		private var aspectRatio:Number;
+		private var maxRenderDistance:Number;
 		
 		private var zBuffer:Array;
 		
@@ -117,8 +118,8 @@ package
 				}
 			
 			map = new Map(canvas, player);
-			sourceRect = new Rectangle(0, 0, map.texWidth, map.texHeight);
-			floorSourceRect = new Rectangle(0, 0, map.texWidth, map.texHeight);
+			sourceRect = new Rectangle(0, 0, map.uvWidth, map.uvHeight);
+			floorSourceRect = new Rectangle(0, 0, map.uvWidth, map.uvHeight);
 			destRect = new Rectangle(0, 0, 1, 0);
 			ceilingRect = new Rectangle(0, 0, FlxG.width, FlxG.height / 2);
 			floorRect = new Rectangle(0, FlxG.height / 2, FlxG.width, FlxG.height / 2);
@@ -138,6 +139,8 @@ package
 			add(meta);
 			
 			zBuffer = new Array(viewport.width);
+			
+			maxRenderDistance = 30;
 		}
 		
 		override public function update():void
@@ -148,8 +151,8 @@ package
 			FlxG.overlap(meta, meta, objectsCollide, circularCollisionCheck);
 			
 			viewport.fill(0xff000000);
-			viewport.pixels.fillRect(ceilingRect, 0xff444444);
-			viewport.pixels.fillRect(floorRect, 0xffff00ff);
+			viewport.pixels.fillRect(ceilingRect, 0xff000000);
+			viewport.pixels.fillRect(floorRect, 0xff000000);
 			//displayText.text = "";
 			if (FlxG.keys.justPressed("T")) showTriangleEdges = !showTriangleEdges;
 			if (FlxG.keys.justPressed("Y")) 
@@ -254,6 +257,9 @@ package
 			var lastSide:int = -1;
 			var lastWallDistance:Number;
 			var wallDistance:Number;
+			var _renderDistance:Number;
+			var _distX:Number;
+			var _distY:Number;
 			
 			playerPosX = player.pos.x / map.texWidth;
 			playerPosY = player.pos.y / map.texHeight;
@@ -309,31 +315,36 @@ package
 						tileY += stepY;
 						side = 1;
 					}
-				} while (passedThroughTile(tileX, tileY) == 0); //Check if ray has hit a wall
+					_distX = playerPosX - tileX;
+					_distY = playerPosY - tileY;
+					_renderDistance = Math.sqrt(_distX * _distX + _distY * _distY);
+				} while (passedThroughTile(tileX, tileY) == 0 && _renderDistance < maxRenderDistance); //Check if ray has hit a wall
 				
-				if (side == 0) wallDistance = Math.abs((tileX - playerPosX + (1 - stepX) / 2) / player.rayDir.x);
-				else wallDistance= Math.abs((tileY - playerPosY + (1 - stepY) / 2) / player.rayDir.y);
-				
-				zBuffer[x] = wallDistance;
-				
-				if (lastTileX != tileX || lastTileY != tileY || lastSide != side)
+				if (_renderDistance <= maxRenderDistance)
 				{
-					if (wallDistance < lastWallDistance)
+					if (side == 0) wallDistance = Math.abs((tileX - playerPosX + (1 - stepX) / 2) / player.rayDir.x);
+					else wallDistance= Math.abs((tileY - playerPosY + (1 - stepY) / 2) / player.rayDir.y);
+					zBuffer[x] = wallDistance;
+					if (lastTileX != tileX || lastTileY != tileY || lastSide != side)
 					{
-						orderTreeMax += 1;
-						map.orderTree[orderTreeMax] = negative * (tileX + tileY * map.widthInTiles);
+						if (wallDistance < lastWallDistance)
+						{
+							orderTreeMax += 1;
+							map.orderTree[orderTreeMax] = negative * (tileX + tileY * map.widthInTiles);
+						}
+						else
+						{
+							orderTreeMin -= 1;
+							map.orderTree[orderTreeMin] = negative * (tileX + tileY * map.widthInTiles);
+						}
+						//FlxG.log(negative);
+						lastWallDistance = wallDistance;
+						lastTileX = tileX;
+						lastTileY = tileY;
+						lastSide = side;
 					}
-					else
-					{
-						orderTreeMin -= 1;
-						map.orderTree[orderTreeMin] = negative * (tileX + tileY * map.widthInTiles);
-					}
-					//FlxG.log(negative);
-					lastWallDistance = wallDistance;
-					lastTileX = tileX;
-					lastTileY = tileY;
-					lastSide = side;
 				}
+				else zBuffer[x] = maxRenderDistance;
 			}
 		}
 		
@@ -344,14 +355,14 @@ package
 			var _face:uint = 0;
 			negative = 1;
 			
-			if (_tile == 0) 
+			if (_tile == 0) //floor tile
 			{
 				var _tileX:int = (player.pos.x / map.texWidth);
 				var _tileY:int = (player.pos.y / map.texHeight);
 				_face = Map.FLOOR;
 				if (map.vismap[_index] != _face) renderFloor(TileX, TileY, TileX + 1, TileY + 1, 2);
 			}
-			else 
+			else //wall tile
 			{
 				if (side == 1) //north or south faces
 				{
@@ -464,14 +475,17 @@ package
 			}
 			else
 			{
-				var _startTexX:Number = 0.1 * (StartTileX - int(StartTileX));
-				var _startTexY:Number = 0.1 * (StartTileY - int(StartTileY));
-				var _endTexX:Number = 0.1 * (EndTileX - int(StartTileX));
-				var _endTexY:Number = 0.1 * (EndTileY - int(StartTileY));
-				floorSourceRect.x = 0.1 + _startTexX;
-				floorSourceRect.y = 0 + _startTexY;
-				floorSourceRect.width = 0.1 + _endTexX;
-				floorSourceRect.height = 0 + _endTexY;
+				var _light:int = 10 - map.lightmap[int(StartTileX) + int(StartTileY) * map.widthInTiles];
+				if (_tileDistance >= 8) _light += int(0.5 * (_tileDistance - 6));
+				if (_light >= 10) return;//_light = 5;
+				var _startTexX:Number = map.uvWidth * (StartTileX - int(StartTileX));
+				var _startTexY:Number = map.uvHeight * (StartTileY - int(StartTileY));
+				var _endTexX:Number = map.uvWidth * (EndTileX - int(StartTileX));
+				var _endTexY:Number = map.uvHeight * (EndTileY - int(StartTileY));
+				floorSourceRect.x = 2 * map.uvWidth + _startTexX;
+				floorSourceRect.y = map.uvHeight * _light + _startTexY;
+				floorSourceRect.width = 2 * map.uvWidth + _endTexX;
+				floorSourceRect.height = map.uvHeight * _light + _endTexY;
 				drawPlaneToCanvas(floorPt0, floorPt1, floorPt2, floorPt3, floorSourceRect);
 				
 				floorPt0.y = viewport.height - floorPt0.y;
@@ -479,30 +493,37 @@ package
 				floorPt2.y = viewport.height - floorPt2.y;
 				floorPt3.y = viewport.height - floorPt3.y;
 				
-				floorSourceRect.x = 0.1 + _startTexX;
-				floorSourceRect.y = 0.1 + _startTexY;
-				floorSourceRect.width = 0.1 + _endTexX;
-				floorSourceRect.height = 0.1 + _endTexY;
+				floorSourceRect.x = 3 * map.uvWidth + _startTexX;
+				floorSourceRect.width = 3 * map.uvWidth + _endTexX;
 				drawPlaneToCanvas(floorPt0, floorPt1, floorPt2, floorPt3, floorSourceRect);
 			}
 		}
 		
 		private function renderWall(TileX:uint, TileY:uint, Face:uint):void
 		{
+			var _pX:Number = player.pos.x / map.texWidth;
+			var _pY:Number = player.pos.y / map.texHeight;
+			var _tX:Number = TileX + 0.5;
+			var _tY:Number = TileY + 0.5;
+			var _tileDistance:Number = Math.sqrt((_pX - _tX) * (_pX - _tX) + (_pY - _tY) * (_pY - _tY));
+			
+			var _index:uint = TileX + TileY * map.widthInTiles;
+			var _light:int = 10 - map.lightmap[_index];
+			if (_tileDistance >= 8) _light += int(0.5 * (_tileDistance - 6));
+			if (_light >= 10) return;//_light = 5;
 			var _tileIndex:uint = map.getTile(TileX, TileY);
+
+			sourceRect.x = map.uvWidth * int(_tileIndex % 10);
+			sourceRect.y = map.uvHeight * _light;
+			sourceRect.width = sourceRect.x + map.uvWidth;
+			sourceRect.height = sourceRect.y + map.uvHeight;
 			
-			sourceRect.x = 0.1 * int(_tileIndex % 10);
-			sourceRect.y = 0.1 * int(_tileIndex / 10);
-			sourceRect.width = sourceRect.x + 0.1;
-			sourceRect.height = sourceRect.y + 0.1;
-			
-			if (Face == Map.NORTH || Face == Map.SOUTH)
+			/*if (Face == Map.NORTH || Face == Map.SOUTH)
 			{
 				sourceRect.y += 0.1;
 				sourceRect.height += 0.1;
-			}
+			}*/
 			
-			var _index:uint = TileX + TileY * map.widthInTiles;
 			var _ptDistance:Number = 0;
 			
 			//distance to upper-left corner of face
@@ -513,7 +534,7 @@ package
 			_ptDistance = projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt1)
 			if (_ptDistance == -1)
 			{
-				sourceRect.width -= 0.025;//0.25 * 0.1;
+				sourceRect.width -= 0.25 * map.uvWidth;
 				if (Face == Map.NORTH) _pt.x += 0.25 * map.texWidth;
 				else if (Face == Map.EAST) _pt.y += 0.25 * map.texHeight;
 				else if (Face == Map.SOUTH) _pt.x -= 0.25 * map.texWidth;
@@ -521,7 +542,7 @@ package
 				_ptDistance = projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt1);
 				if (_ptDistance == -1)
 				{
-					sourceRect.width -= 0.025;//0.25 * 0.1;
+					sourceRect.width -= 0.25 * map.uvWidth;
 					if (Face == Map.NORTH) _pt.x += 0.25 * map.texWidth;
 					else if (Face == Map.EAST) _pt.y += 0.25 * map.texHeight;
 					else if (Face == Map.SOUTH) _pt.x -= 0.25 * map.texWidth;
@@ -529,7 +550,7 @@ package
 					_ptDistance = projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt1);
 					if (_ptDistance == -1)
 					{
-						sourceRect.width -= 0.025;//0.25 * 0.1;
+						sourceRect.width -= 0.25 * map.uvWidth;
 						if (Face == Map.NORTH) _pt.x += 0.25 * map.texWidth;
 						else if (Face == Map.EAST) _pt.y += 0.25 * map.texHeight;
 						else if (Face == Map.SOUTH) _pt.x -= 0.25 * map.texWidth;
@@ -552,7 +573,7 @@ package
 			_ptDistance = projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt0)
 			if (_ptDistance == -1)
 			{
-				sourceRect.x += 0.025;//0.25 * 0.1;
+				sourceRect.x += 0.25 * map.uvWidth;
 				if (Face == Map.NORTH) _pt.x -= 0.25 * map.texWidth;
 				else if (Face == Map.EAST) _pt.y -= 0.25 * map.texHeight;
 				else if (Face == Map.SOUTH) _pt.x += 0.25 * map.texWidth;
@@ -560,7 +581,7 @@ package
 				_ptDistance = projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt0);
 				if (_ptDistance == -1)
 				{
-					sourceRect.x += 0.025;//0.25 * 0.1;
+					sourceRect.x += 0.25 * map.uvWidth;
 					if (Face == Map.NORTH) _pt.x -= 0.25 * map.texWidth;
 					else if (Face == Map.EAST) _pt.y -= 0.25 * map.texHeight;
 					else if (Face == Map.SOUTH) _pt.x += 0.25 * map.texWidth;
@@ -568,7 +589,7 @@ package
 					_ptDistance = projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt0);
 					if (_ptDistance == -1)
 					{
-						sourceRect.x += 0.025;//0.25 * 0.1;
+						sourceRect.x += 0.25 * map.uvWidth;
 						if (Face == Map.NORTH) _pt.x -= 0.25 * map.texWidth;
 						else if (Face == Map.EAST) _pt.y -= 0.25 * map.texHeight;
 						else if (Face == Map.SOUTH) _pt.x += 0.25 * map.texWidth;
@@ -588,8 +609,8 @@ package
 		
 		public function drawPlaneToCanvas(Point0:FlxPoint, Point1:FlxPoint, Point2:FlxPoint, Point3:FlxPoint, SourceRect:Rectangle):void
 		{
-			var _indentX:Number = 1/128/10/4;
-			var _indentY:Number = 1/128/4/4;
+			var _indentX:Number = 0.000390625;//1/128/10/2;
+			var _indentY:Number = 0.000390625;//1/128/20/2;
 			_point = intersect(Point0, Point1, Point2, Point3);
 			if (_point == null) return;
 			
@@ -611,9 +632,9 @@ package
 				Vector.<Number>([Point0.x, Point0.y, Point1.x, Point1.y, Point2.x, Point2.y, Point3.x, Point3.y]),
 				Vector.<int>([0, 1, 2, 1, 3, 2]),
 				Vector.<Number>([
-					SourceRect.x - _indentX,		SourceRect.y,					(1/ll2)*f,
-					SourceRect.width - _indentX,	SourceRect.y,					(1/lr2), 
-					SourceRect.x - _indentX,		SourceRect.height - _indentY,	(1/lr1),
+					SourceRect.x + _indentX,		SourceRect.y + _indentY,		(1/ll2)*f,
+					SourceRect.width - _indentX,	SourceRect.y + _indentY,		(1/lr2), 
+					SourceRect.x + _indentX,		SourceRect.height - _indentY,	(1/lr1),
 					SourceRect.width - _indentX,	SourceRect.height - _indentY,	(1/ll1)*f ])
 			);
 		}
@@ -650,21 +671,13 @@ package
 		
 		public function renderEntities():void
 		{
-			var planeX:Number = 0.66 * player.view.x;
-			var planeY:Number = 0.66 * player.view.y;
-			var invDet:Number = 1.0 / (planeX * player.dir.y - player.dir.x * planeY); //required for correct matrix multiplication
-			
-			var _x:Number;
-			var _y:Number;
-			var transformX:Number;
-			var transformY:Number;
-			var _pX:Number = player.pos.x;
-			var _pY:Number = player.pos.y;
 			var _clipLeft:uint;
 			var _clipWidth:uint;
 			var _leftEdge:int;
 			var _rightEdge:int;
 			var _width:int;
+			var _posX:uint;
+			var _posY:uint;
 			
 			for (var i:uint = 0; i < entities.length; i++)
 			{
@@ -697,6 +710,10 @@ package
 					entity.clipRect.x -= 1;
 					entity.clipRect.width += 1;
 					entity.clipRect.height = viewport.height;
+					
+					_posX = int(entity.pos.x / map.texWidth);
+					_posY = int(entity.pos.y / map.texHeight);
+					entity.light(map.lightmap[_posX + _posY * map.widthInTiles] + 1);
 				}
 			}
 			entities.sort("distance", DESCENDING);

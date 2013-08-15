@@ -8,6 +8,10 @@ package
 	public class Entity extends FlxSprite
 	{
 		[Embed(source="../assets/images/FlixelFPS_Spritemap.png")] protected static var imgSprites:Class;
+		
+		public static const TIPPYTOES:uint = 0;
+		public static const NITELITE:uint = 1;
+		
 		protected var _pos:FlxPoint;
 		public var target:Player;
 		
@@ -24,9 +28,9 @@ package
 			super(X, Y);
 			
 			loadGraphic(imgSprites, true, false, 128, 128);
-			addAnimation("orb", [21]);
-			addAnimation("tippytoe_walk", [40, 41], 4, true);
-			addAnimation("tippytoe_idle", [41]);
+			addAnimation("orb", [131]);
+			addAnimation("tippytoes_walk", [110, 111], 4, true);
+			addAnimation("tippytoes_idle", [111]);
 			
 			type = Type;
 			width = 48;
@@ -44,9 +48,9 @@ package
 			x = X * 128 + width / 2;
 			y = Y * 128 + height / 2;
 			
-			if (type == 0)
+			if (type == TIPPYTOES)
 			{
-				play("tippytoe_idle");
+				play("tippytoes_idle");
 				color = 0xe4edb3;
 				timer.start(0.25 * FlxG.random(), 1, onTimerMove);
 			}
@@ -58,7 +62,7 @@ package
 			if (target == null) return;
 			if (FlxU.getDistance(pos, target.pos) < 128 * 8)
 			{
-				play("tippytoe_walk");
+				play("tippytoes_walk");
 				var _ang:Number = FlxU.getAngle(pos, target.pos) + 270;
 				if (_curFrame == 1) _ang -= 20;
 				else _ang += 20;
@@ -66,7 +70,7 @@ package
 				velocity.x = moveSpeed * Math.cos(_ang);
 				velocity.y = moveSpeed * Math.sin(_ang);
 			}
-			else play("tippytoe_idle");
+			else play("tippytoes_idle");
 		}
 		
 		public function toRadians(Degrees:Number):Number
@@ -142,6 +146,26 @@ package
 			_pos.x = x + width / 2;
 			_pos.y = y + height / 2;
 			return _pos;
+		}
+		
+		public function light(LightLevel:uint):void
+		{			
+			var _light:Number = LightLevel;
+			if (distance >= 8) _light -= int(0.5 * (distance - 6));
+			if (_light < 2) _light = 2;
+			else if (_light > 10) _light = 10;
+			_light /= Map.LIGHT_LEVELS;
+			var _red:uint;
+			var _green:uint;
+			var _blue:uint;
+			
+			if (type == TIPPYTOES)
+			{
+				_red = 228 * _light;
+				_green = 237 * _light;
+				_blue = 179 * _light;
+				color = (_red << 16) + (_green << 8) + _blue;
+			}
 		}
 	}
 }
