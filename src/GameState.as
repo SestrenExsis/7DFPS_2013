@@ -22,6 +22,7 @@ package
 	public class GameState extends ScreenState
 	{
 		[Embed(source="../assets/images/FlixelFPS_Spritemap.png")] protected static var imgWalls:Class;
+		[Embed(source="../assets/images/FlixelFPS_FirstPerson.png")] protected static var imgPOV:Class;
 		
 		private static var zoomLevel:Number = 1;
 		
@@ -39,6 +40,7 @@ package
 		private var entities:FlxGroup;
 		private var entity:Entity;
 		private var meta:FlxGroup;
+		private var playerSprite:FlxSprite;
 		
 		//for drawing triangles
 		private var canvas:Sprite;
@@ -106,16 +108,34 @@ package
 			_pt = new FlxPoint();
 			_intersect = new FlxPoint();
 			player = new Player();
+			playerSprite = new FlxSprite();
+			playerSprite.loadGraphic(imgPOV, true, false, 128, 128);
+			playerSprite.addAnimation("cast", [0, 1], 1, false);
+			playerSprite.addAnimation("idle", [0]);
+			playerSprite.play("idle");
+			playerSprite.scale.x = playerSprite.scale.y = 3;
+			playerSprite.x = viewport.width - 192;
+			playerSprite.y = viewport.height - 192;
+			playerSprite.scrollFactor.x = playerSprite.scrollFactor.y = 0;
+			
 			FlxG.camera.follow(player);
 
 			entities = new FlxGroup();
-			for (var i:uint = 0; i < 1; i++)
+			for (var i:uint = 0; i < 2; i++)
+			{
 				for (var j:uint = 0; j < 2; j++)
 				{
 					entity = new Entity(i * 8 + 12, j * 8 + 12);
 					entity.target = player;
 					entities.add(entity);
 				}
+			}
+			
+			for (i = 0; i < 3; i++)
+			{
+				entity = new Entity(i * 2 + 15, j * 2 + 15, i + 1);
+				entities.add(entity);
+			}
 			
 			map = new Map(canvas, player);
 			sourceRect = new Rectangle(0, 0, map.uvWidth, map.uvHeight);
@@ -129,8 +149,7 @@ package
 			
 			add(viewport);
 			add(map);
-			//add(player);
-			//add(entities);
+			add(playerSprite);
 			add(displayText);
 			
 			meta = new FlxGroup();

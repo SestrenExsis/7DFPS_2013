@@ -51,18 +51,17 @@ package
 			_pos = new FlxPoint();
 			
 			_rayDir = new FlxPoint();
-			//visible = false;
 		}
 		
 		override public function draw():void
 		{
-			super.draw();
+			
+			if (FlxG.visualDebug) super.draw();
 		}
 		
 		override public function update():void
 		{
 			super.update();
-			visible = FlxG.visualDebug;
 			if (FlxG.keys["SHIFT"]) speedMultiplier = 0.1;
 			else speedMultiplier = 1;
 			
@@ -102,6 +101,22 @@ package
 				angularVelocity = -rotSpeed * speedMultiplier * (180 / Math.PI);
 			}
 			else angularVelocity = 0;
+		}
+		
+		public function light(LightLevel:uint):void
+		{			
+			var _light:Number = LightLevel;
+			if (_light < 2) _light = 2;
+			else if (_light > 10) _light = 10;
+			_light /= Map.LIGHT_LEVELS;
+			var _red:uint;
+			var _green:uint;
+			var _blue:uint;
+			
+			_red = 255 * _light;
+			_green = 255 * _light;
+			_blue = 255 * _light;
+			color = (_red << 16) + (_green << 8) + _blue;
 		}
 		
 		public function get rayDir():FlxPoint

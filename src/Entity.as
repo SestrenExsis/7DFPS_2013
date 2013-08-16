@@ -10,7 +10,9 @@ package
 		[Embed(source="../assets/images/FlixelFPS_Spritemap.png")] protected static var imgSprites:Class;
 		
 		public static const TIPPYTOES:uint = 0;
-		public static const NITELITE:uint = 1;
+		public static const ORB_RED:uint = 1;
+		public static const ORB_GREEN:uint = 1;
+		public static const ORB_BLUE:uint = 1;
 		
 		protected var _pos:FlxPoint;
 		public var target:Player;
@@ -28,9 +30,10 @@ package
 			super(X, Y);
 			
 			loadGraphic(imgSprites, true, false, 128, 128);
-			addAnimation("orb", [131]);
+			addAnimation("orb", [130, 131, 132, 131], 4, true);
 			addAnimation("tippytoes_walk", [110, 111], 4, true);
 			addAnimation("tippytoes_idle", [111]);
+			addAnimation("tippytoes_die", [112, 113], 1, false);
 			
 			type = Type;
 			width = 48;
@@ -50,9 +53,14 @@ package
 			
 			if (type == TIPPYTOES)
 			{
-				play("tippytoes_idle");
 				color = 0xe4edb3;
+				play("tippytoes_idle");
 				timer.start(0.25 * FlxG.random(), 1, onTimerMove);
+			}
+			else 
+			{
+				color = 0xff0000;
+				play("orb");
 			}
 		}
 		
@@ -149,7 +157,7 @@ package
 		}
 		
 		public function light(LightLevel:uint):void
-		{			
+		{
 			var _light:Number = LightLevel;
 			if (distance >= 8) _light -= int(0.5 * (distance - 6));
 			if (_light < 2) _light = 2;
@@ -164,6 +172,27 @@ package
 				_red = 228 * _light;
 				_green = 237 * _light;
 				_blue = 179 * _light;
+				color = (_red << 16) + (_green << 8) + _blue;
+			}
+			else if (type == ORB_RED)
+			{
+				_red = 255 * _light;
+				_green = 0 * _light;
+				_blue = 0 * _light;
+				color = (_red << 16) + (_green << 8) + _blue;
+			}
+			else if (type == ORB_GREEN)
+			{
+				_red = 0 * _light
+				_green = 255 * _light;
+				_blue = 0 * _light;
+				color = (_red << 16) + (_green << 8) + _blue;
+			}
+			else if (type == ORB_BLUE)
+			{
+				_red = 0 * _light
+				_green = 0 * _light;
+				_blue = 255 * _light;
 				color = (_red << 16) + (_green << 8) + _blue;
 			}
 		}
