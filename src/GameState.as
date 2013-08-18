@@ -149,14 +149,15 @@ package
 			
 			add(viewport);
 			add(map);
-			add(playerSprite);
-			add(displayText);
 			
 			meta = new FlxGroup();
 			meta.add(player);
 			meta.add(entities);
 			add(meta);
 			
+			add(displayText);
+			add(playerSprite);
+
 			zBuffer = new Array(viewport.width);
 			
 			maxRenderDistance = 30;
@@ -183,20 +184,10 @@ package
 		
 		private function objectsCollide(Object1:FlxObject,Object2:FlxObject):void
 		{
-			if (FlxObject.separateX(Object1, Object2)) 
-			{
-				Object1.velocity.x = 0;
-				Object1.x = Object1.last.x;
-				Object2.velocity.x = 0;
-				Object2.x = Object2.last.x;
-			}
-			if (FlxObject.separateY(Object1, Object2)) 
-			{
-				Object1.velocity.y = 0;
-				Object1.y = Object1.last.y;
-				Object2.velocity.y = 0;
-				Object2.y = Object2.last.y;
-			}
+			if (Object2 is Player) objectsCollide(Object2, Object1);
+			
+			if (Object1 is Player) (Object2 as Entity).hitsPlayer(Object1 as Player);
+			else (Object2 as Entity).hitsEntity(Object1 as Entity);
 		}
 		
 		private function circularCollisionCheck(Object1:FlxObject,Object2:FlxObject):Boolean
@@ -527,7 +518,11 @@ package
 			var _tileDistance:Number = Math.sqrt((_pX - _tX) * (_pX - _tX) + (_pY - _tY) * (_pY - _tY));
 			
 			var _index:uint = TileX + TileY * map.widthInTiles;
-			var _light:int = 10 - map.lightmap[_index];
+			var _light:int;
+			if (Face == Map.WEST) _light = 10 - map.lightmap[_index - 1];
+			else if (Face == Map.EAST) _light = 10 - map.lightmap[_index + 1];
+			else if (Face == Map.NORTH) _light = 10 - map.lightmap[_index - map.widthInTiles];
+			else if (Face == Map.SOUTH) _light = 10 - map.lightmap[_index + map.widthInTiles];
 			if (_tileDistance >= 8) _light += int(0.5 * (_tileDistance - 6));
 			if (_light >= 10) return;//_light = 5;
 			var _tileIndex:uint = map.getTile(TileX, TileY);
@@ -537,14 +532,7 @@ package
 			sourceRect.width = sourceRect.x + map.uvWidth;
 			sourceRect.height = sourceRect.y + map.uvHeight;
 			
-			/*if (Face == Map.NORTH || Face == Map.SOUTH)
-			{
-				sourceRect.y += 0.1;
-				sourceRect.height += 0.1;
-			}*/
-			
 			var _ptDistance:Number = 0;
-			
 			//distance to upper-left corner of face
 			_pt.x = TileX * map.texWidth;
 			_pt.y = TileY * map.texHeight;
@@ -646,7 +634,6 @@ package
 
 			// Draws the triangle
 			canvas.graphics.beginBitmapFill(map.textures.pixels, null, false, false);
-			
 			canvas.graphics.drawTriangles(
 				Vector.<Number>([Point0.x, Point0.y, Point1.x, Point1.y, Point2.x, Point2.y, Point3.x, Point3.y]),
 				Vector.<int>([0, 1, 2, 1, 3, 2]),
@@ -697,6 +684,13 @@ package
 			var _width:int;
 			var _posX:uint;
 			var _posY:uint;
+			
+			var _light:Number = map.lightmap[int(player.pos.x / map.texWidth) + int(player.pos.y / map.texHeight) * map.widthInTiles]
+			if (_light < 2) _light = 2;
+			else if (_light > 10) _light = 10;
+			_light /= Map.LIGHT_LEVELS;
+			var _shade:uint = 255 * _light;
+			playerSprite.color = (_shade << 16) + (_shade << 8) + _shade;
 			
 			for (var i:uint = 0; i < entities.length; i++)
 			{
@@ -765,12 +759,6 @@ package
 			{
 				return -1;
 			}
-		}
-		
-		public function isPointOnScreen(Point:FlxPoint):Boolean
-		{
-			if (Point.x < 0 || Point.x > viewport.width || Point.y < 0 || Point.y > viewport.height) return false;
-			else return true;
 		}
 	}
 }

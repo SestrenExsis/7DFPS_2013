@@ -81,6 +81,29 @@ package
 			else play("tippytoes_idle");
 		}
 		
+		public function hitsPlayer(Target:Player):void
+		{
+			if (FlxObject.separateX(this, Target)) 
+			{
+				velocity.x = 0;
+				x = last.x;
+				Target.velocity.x = 0;
+				Target.x = Target.last.x;
+			}
+			if (FlxObject.separateY(this, Target)) 
+			{
+				velocity.y = 0;
+				y = last.y;
+				Target.velocity.y = 0;
+				Target.y = Target.last.y;
+			}
+		}
+		
+		public function hitsEntity(Target:Entity):void
+		{
+			
+		}
+		
 		public function toRadians(Degrees:Number):Number
 		{
 			var _rad:Number = Math.abs((Degrees + 360) % 360) % 360;
