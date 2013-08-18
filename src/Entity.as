@@ -11,8 +11,8 @@ package
 		
 		public static const TIPPYTOES:uint = 0;
 		public static const ORB_RED:uint = 1;
-		public static const ORB_GREEN:uint = 1;
-		public static const ORB_BLUE:uint = 1;
+		public static const ORB_GREEN:uint = 2;
+		public static const ORB_BLUE:uint = 3;
 		
 		protected var _pos:FlxPoint;
 		public var target:Player;
@@ -23,7 +23,6 @@ package
 		public var moveSpeed:Number;
 		public var timer:FlxTimer;
 		public var type:uint;
-		//public var posZ:Number = 0; //0 means the bottom of the sprite rests on the ground
 		
 		public function Entity(X:Number = 22, Y:Number = 12.5, Type:uint = 0)
 		{
@@ -33,7 +32,7 @@ package
 			addAnimation("orb", [130, 131, 132, 131], 4, true);
 			addAnimation("tippytoes_walk", [110, 111], 4, true);
 			addAnimation("tippytoes_idle", [111]);
-			addAnimation("tippytoes_die", [112, 113], 1, false);
+			addAnimation("tippytoes_die", [112, 113], 2, false);
 			
 			type = Type;
 			width = 48;
@@ -64,66 +63,19 @@ package
 			}
 		}
 		
-		public function onTimerMove(Timer:FlxTimer):void
-		{
-			Timer.start(0.25, 1, onTimerMove);
-			if (target == null) return;
-			if (FlxU.getDistance(pos, target.pos) < 128 * 8)
-			{
-				play("tippytoes_walk");
-				var _ang:Number = FlxU.getAngle(pos, target.pos) + 270;
-				if (_curFrame == 1) _ang -= 20;
-				else _ang += 20;
-				_ang = toRadians(_ang);
-				velocity.x = moveSpeed * Math.cos(_ang);
-				velocity.y = moveSpeed * Math.sin(_ang);
-			}
-			else play("tippytoes_idle");
-		}
-		
-		public function hitsPlayer(Target:Player):void
-		{
-			if (FlxObject.separateX(this, Target)) 
-			{
-				velocity.x = 0;
-				x = last.x;
-				Target.velocity.x = 0;
-				Target.x = Target.last.x;
-			}
-			if (FlxObject.separateY(this, Target)) 
-			{
-				velocity.y = 0;
-				y = last.y;
-				Target.velocity.y = 0;
-				Target.y = Target.last.y;
-			}
-		}
-		
-		public function hitsEntity(Target:Entity):void
-		{
-			
-		}
-		
-		public function toRadians(Degrees:Number):Number
-		{
-			var _rad:Number = Math.abs((Degrees + 360) % 360) % 360;
-			return _rad * (Math.PI / 180);
-		}
-		
 		override public function update():void
 		{
-			if (FlxG.keys.pressed("UP")) velocity.y = -moveSpeed;
-			else if (FlxG.keys.pressed("DOWN")) velocity.y = moveSpeed;
+			super.update();
 			
-			if (FlxG.keys.pressed("LEFT")) velocity.x = -moveSpeed;
-			else if (FlxG.keys.pressed("RIGHT")) velocity.x = moveSpeed;
+			if (FlxG.keys.justPressed("SPACE") && type == TIPPYTOES) kill();
 		}
 		
 		override public function draw():void
 		{
 			if (distance == -1) return;
-			var _xx:Number = viewPos.x - frameWidth / 2;
-			var _yy:Number = viewPos.y - frameHeight / 2;
+			
+			var _xx:Number = viewPos.x - 0.5 * frameWidth;
+			var _yy:Number = viewPos.y - 0.5 * frameHeight;
 			
 			if(_flickerTimer != 0)
 			{
@@ -170,6 +122,82 @@ package
 				if(FlxG.visualDebug && !ignoreDrawDebug)
 					drawDebug(camera);
 			}
+		}
+		
+		override public function destroy():void
+		{
+			super.destroy();
+			
+			_pos = null;
+			viewPos = null;
+			clipRect = null;
+			timer = null;
+		}
+		
+		public function onTimerMove(Timer:FlxTimer):void
+		{
+			Timer.start(0.25, 1, onTimerMove);
+			if (target == null) return;
+			if (FlxU.getDistance(pos, target.pos) < 128 * 8)
+			{
+				play("tippytoes_walk");
+				var _ang:Number = FlxU.getAngle(pos, target.pos) + 270;
+				if (_curFrame == 1) _ang -= 20;
+				else _ang += 20;
+				_ang = toRadians(_ang);
+				velocity.x = moveSpeed * Math.cos(_ang);
+				velocity.y = moveSpeed * Math.sin(_ang);
+			}
+			else play("tippytoes_idle");
+		}
+		
+		public function onTimerKill(Timer:FlxTimer):void
+		{
+			alive = false;
+			exists = false;
+			destroy();
+		}
+		
+		override public function kill():void
+		{
+			alive = false;
+			timer.stop();
+			if (type == TIPPYTOES)
+			{
+				play("tippytoes_die");
+				timer.start(1, 1, onTimerKill);
+			}
+			else onTimerKill(timer);
+		}
+		
+		public function hitsPlayer(Target:Player):void
+		{
+			if (type == ORB_RED || type == ORB_GREEN || type == ORB_BLUE) return;
+			if (FlxObject.separateX(this, Target)) 
+			{
+				velocity.x = 0;
+				x = last.x;
+				Target.velocity.x = 0;
+				Target.x = Target.last.x;
+			}
+			if (FlxObject.separateY(this, Target)) 
+			{
+				velocity.y = 0;
+				y = last.y;
+				Target.velocity.y = 0;
+				Target.y = Target.last.y;
+			}
+		}
+		
+		public function hitsEntity(Target:Entity):void
+		{
+			
+		}
+		
+		public function toRadians(Degrees:Number):Number
+		{
+			var _rad:Number = Math.abs((Degrees + 360) % 360) % 360;
+			return _rad * (Math.PI / 180);
 		}
 		
 		public function get pos():FlxPoint

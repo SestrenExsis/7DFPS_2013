@@ -159,7 +159,6 @@ package
 			add(playerSprite);
 
 			zBuffer = new Array(viewport.width);
-			
 			maxRenderDistance = 30;
 		}
 		
@@ -231,8 +230,8 @@ package
 		private function addFacesToBuffer(SearchResolution:uint):void
 		{
 			//****************************************************************************
-			//A lot of this code is borrowed from http://lodev.org/cgtutor/raycasting.html.
-			//Many thanks to them for the great tutorial.
+			// A lot of this code is borrowed from http://lodev.org/cgtutor/raycasting.html.
+			// Many thanks to them for the great tutorial.
 			//****************************************************************************
 			
 			//x-coordinate in camera space
@@ -399,9 +398,7 @@ package
 			var _tY:Number = 0.5 * (StartTileY + EndTileY);
 			
 			var _tileDistance:Number = Math.sqrt((_pX - _tX) * (_pX - _tX) + (_pY - _tY) * (_pY - _tY));
-			//if (_tileDistance < 0.2) return;
 			
-			//var _tileIsSelected:Boolean = (TileX == selectedTile.x) && (TileY == selectedTile.y);
 			var _badPt0:Boolean = false;
 			var _badPt1:Boolean = false;
 			var _badPt2:Boolean = false;
@@ -411,14 +408,12 @@ package
 			var _closestGoodPt:int = -1;
 			var _minDistance:Number = 10;
 			var _offScreenCount:uint = 0;
+			
 			//distance to upper-left corner of tile
 			_pt.x = StartTileX * map.texWidth;
 			_pt.y = StartTileY * map.texHeight;
 			_ptDistance = projectPointToScreen(_pt.x, _pt.y, 0, floorPt0)
-			if (_ptDistance == -1)
-			{
-				_badPt0 = _badPointExists = true;
-			}
+			if (_ptDistance == -1) _badPt0 = _badPointExists = true;
 			else if (_ptDistance < _minDistance)
 			{
 				_closestGoodPt = 0;
@@ -428,10 +423,7 @@ package
 			//distance to upper-right corner of tile
 			_pt.x = EndTileX * map.texWidth;
 			_ptDistance = projectPointToScreen(_pt.x, _pt.y, 0, floorPt1)
-			if (_ptDistance == -1)
-			{
-				_badPt1 = _badPointExists = true;
-			}
+			if (_ptDistance == -1) _badPt1 = _badPointExists = true;
 			else if (_ptDistance < _minDistance)
 			{
 				_closestGoodPt = 1;
@@ -441,10 +433,7 @@ package
 			//distance to lower-right corner of tile
 			_pt.y = EndTileY * map.texHeight;
 			_ptDistance = projectPointToScreen(_pt.x, _pt.y, 0, floorPt3)
-			if (_ptDistance == -1)
-			{
-				_badPt3 = _badPointExists = true;
-			}
+			if (_ptDistance == -1) _badPt3 = _badPointExists = true;
 			else if (_ptDistance < _minDistance)
 			{
 				_closestGoodPt = 3;
@@ -454,20 +443,18 @@ package
 			//distance to lower-left corner of tile
 			_pt.x = StartTileX * map.texWidth;
 			_ptDistance = projectPointToScreen(_pt.x, _pt.y, 0, floorPt2)
-			if (_ptDistance == -1)
-			{
-				_badPt2 = _badPointExists = true;
-			}
+			if (_ptDistance == -1) _badPt2 = _badPointExists = true;
 			else if (_ptDistance < _minDistance)
 			{
 				_closestGoodPt = 2;
 				_minDistance = _ptDistance;
 			}
 			
-			//if (!isPointOnScreen(floorPt0) && !isPointOnScreen(floorPt1) && !isPointOnScreen(floorPt2) && !isPointOnScreen(floorPt3)) return;
-			
 			if (_badPointExists)
 			{
+				if (IterationsLeft == 0) return;
+				//invalidate the closest good point, so we can figure out whether to cut it in half or in quadrants, as well as
+				//which quadrant or half to use
 				if (_closestGoodPt == 0) _badPt0 = true;
 				else if (_closestGoodPt == 1) _badPt1 = true;
 				else if (_closestGoodPt == 2) _badPt2 = true;
@@ -477,7 +464,7 @@ package
 				var _sY:Number = StartTileY;
 				var _eX:Number = EndTileX;
 				var _eY:Number = EndTileY;
-				if 		(_badPt0 && _badPt1) _sY = StartTileY + 0.4 * (EndTileY - StartTileY);//0.5 * (StartTileY + EndTileY);
+				if 		(_badPt0 && _badPt1) _sY = StartTileY + 0.4 * (EndTileY - StartTileY);
 				else if (_badPt2 && _badPt3) _eY = StartTileY + 0.6 * (EndTileY - StartTileY);
 				if 		(_badPt0 && _badPt2) _sX = StartTileX + 0.4 * (EndTileX - StartTileX);
 				else if (_badPt1 && _badPt3) _eX = StartTileX + 0.6 * (EndTileX - StartTileX);
@@ -519,6 +506,7 @@ package
 			
 			var _index:uint = TileX + TileY * map.widthInTiles;
 			var _light:int;
+			//Use the lighting of the square that is adjacent to this particular wall face
 			if (Face == Map.WEST) _light = 10 - map.lightmap[_index - 1];
 			else if (Face == Map.EAST) _light = 10 - map.lightmap[_index + 1];
 			else if (Face == Map.NORTH) _light = 10 - map.lightmap[_index - map.widthInTiles];
@@ -527,6 +515,7 @@ package
 			if (_light >= 10) return;//_light = 5;
 			var _tileIndex:uint = map.getTile(TileX, TileY);
 
+			//move downward on the texture file based on how dark it needs to be.
 			sourceRect.x = map.uvWidth * int(_tileIndex % 10);
 			sourceRect.y = map.uvHeight * _light;
 			sourceRect.width = sourceRect.x + map.uvWidth;
@@ -548,7 +537,8 @@ package
 				else if (Face == Map.WEST) _pt.y -= 0.25 * map.texHeight;
 				_ptDistance = projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt1);
 				if (_ptDistance == -1)
-				{
+				{	// If the distance is negative, then the point is behind the player, and will not render properly. So, we need to cut
+					//part of the wall off and try again
 					sourceRect.width -= 0.25 * map.uvWidth;
 					if (Face == Map.NORTH) _pt.x += 0.25 * map.texWidth;
 					else if (Face == Map.EAST) _pt.y += 0.25 * map.texHeight;
@@ -577,9 +567,11 @@ package
 			_pt.y = TileY * map.texHeight;
 			if (Face == Map.NORTH || Face == Map.EAST) _pt.x += map.texWidth;
 			if (Face == Map.EAST || Face == Map.SOUTH) _pt.y += map.texHeight;
-			_ptDistance = projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt0)
+			_ptDistance = projectPointToScreen(_pt.x, _pt.y, map.texHeight, pt0);
+			
 			if (_ptDistance == -1)
-			{
+			{	// If the distance is negative, then the point is behind the player, and will not render properly. So, we need to cut
+				//part of the wall off and try again
 				sourceRect.x += 0.25 * map.uvWidth;
 				if (Face == Map.NORTH) _pt.x -= 0.25 * map.texWidth;
 				else if (Face == Map.EAST) _pt.y -= 0.25 * map.texHeight;
@@ -646,7 +638,7 @@ package
 		}
 		
 		/**
-		 * Get the <code>intersect</code> of the diagonals between the four courners of the <code>FlxPlane</code>.
+		 * Get the <code>intersect</code> of the diagonals between the four courners of the 3D face we're wanting to draw.
 		 */
 		public function intersect(Point0:FlxPoint, Point1:FlxPoint, Point2:FlxPoint, Point3:FlxPoint):FlxPoint
 		{
@@ -686,52 +678,68 @@ package
 			var _posY:uint;
 			
 			var _light:Number = map.lightmap[int(player.pos.x / map.texWidth) + int(player.pos.y / map.texHeight) * map.widthInTiles]
-			if (_light < 2) _light = 2;
+			if (_light < 2) _light = 3;
 			else if (_light > 10) _light = 10;
 			_light /= Map.LIGHT_LEVELS;
 			var _shade:uint = 255 * _light;
 			playerSprite.color = (_shade << 16) + (_shade << 8) + _shade;
-			
 			for (var i:uint = 0; i < entities.length; i++)
 			{
 				entity = entities.members[i];
-				if (entity.alive)
+				if (entity.exists)
 				{
 					entity.distance = projectPointToScreen(entity.x, entity.y, 64, entity.viewPos, entity);
 					if (entity.distance == -1) entity.visible = false;
-					
-					else entity.visible = true;
-					_width = entity.frameWidth * entity.scale.x;
-					
-					_leftEdge = entity.viewPos.x - 0.5 * _width;
-					if (_leftEdge < 0) _leftEdge = 0;
-					_clipLeft = _leftEdge;
-					
-					_rightEdge = entity.viewPos.x + 0.5 * _width;
-					if (_rightEdge > viewport.width) _rightEdge = viewport.width;
-					
-					while ((_clipLeft < _rightEdge) && (zBuffer[_clipLeft] < entity.distance)) _clipLeft += 1;
-					entity.clipRect.x = _clipLeft;
-					_clipWidth = _rightEdge - _clipLeft;
-					
-					if (_clipWidth > 0)
+					else 
 					{
-						while ((_clipWidth > 0) && (zBuffer[_clipLeft + _clipWidth] < entity.distance)) _clipWidth -= 1;
-						entity.clipRect.width = _clipWidth;
+						entity.visible = true;					
+						_width = entity.frameWidth * entity.scale.x;
+						
+						_leftEdge = int(entity.viewPos.x - 0.5 * _width);
+						if (_leftEdge < 0) _leftEdge = 0;
+						_clipLeft = _leftEdge;
+						_rightEdge = int(entity.viewPos.x + 0.5 * _width);
+						if (_rightEdge >= viewport.width) _rightEdge = viewport.width - 1;
+						while ((_clipLeft < _rightEdge) && (_clipLeft + _leftEdge < zBuffer.length) 
+							&& (zBuffer[_clipLeft] < entity.distance)) _clipLeft += 1;
+						entity.clipRect.x = _clipLeft;
+						_clipWidth = _rightEdge - _clipLeft;
+						if (_clipWidth > viewport.width - _clipLeft) _clipWidth = viewport.width - _clipLeft;
+						
+						while ((_clipWidth > 0) && (_clipLeft + _clipWidth < zBuffer.length) 
+							&& (zBuffer[_clipLeft + _clipWidth] < entity.distance)) _clipWidth -= 1;
+						if (_clipWidth > 0)
+						{
+							entity.clipRect.width = _clipWidth + 1;
+							entity.clipRect.x -= 1;
+							entity.clipRect.height = viewport.height;
+							
+							_posX = int(entity.pos.x / map.texWidth);
+							_posY = int(entity.pos.y / map.texHeight);
+							entity.light(map.lightmap[_posX + _posY * map.widthInTiles] + 1);
+						}
+						else 
+						{
+							entity.visible = false;
+							entity.distance = -1;
+						}
 					}
-					else entity.distance = -1;
-					entity.clipRect.x -= 1;
-					entity.clipRect.width += 1;
-					entity.clipRect.height = viewport.height;
-					
-					_posX = int(entity.pos.x / map.texWidth);
-					_posY = int(entity.pos.y / map.texHeight);
-					entity.light(map.lightmap[_posX + _posY * map.widthInTiles] + 1);
 				}
 			}
 			entities.sort("distance", DESCENDING);
 		}
 		
+		/**
+		 * Projects a point in 3d (x, y, z) map space to a point in 2d (x, y) screen space, relative to the Player.
+		 * 
+		 * @param	SourceX				The x-coordinate in map space of the point to be projected.
+		 * @param	SourceY				The y-coordinate in map space of the point to be projected.
+		 * @param	SourceZ				The z-coordinate in map space of the point to be projected.
+		 * @param	DestinationPoint	The point used to store the screen coordinates after projection.
+		 * @param	GameEntity			If present, it means this Entity needs to be resized after its distance has been calculated.
+		 * 
+		 * @return	The distance in tile units from the player to the point.
+		 */
 		public function projectPointToScreen(SourceX:Number, SourceY:Number, SourceZ:Number, DestinationPoint:FlxPoint, GameEntity:Entity = null):Number
 		{
 			var planeX:Number = player.magView * player.view.x;
@@ -742,17 +750,21 @@ package
 			var _y:Number = SourceY - player.pos.y;
 			
 			var transformX:Number = invDet * (player.dir.y * _x - player.dir.x * _y);
-			var transformY:Number = invDet * (-planeY * _x + planeX * _y); //this is actually the depth inside the screen, that what Z is in 3D       
+			var transformY:Number = invDet * (-planeY * _x + planeX * _y); 
 			var _height:Number = viewport.height / transformY;
-			//entity.visible = (transformY > 0);
+			
 			if (transformY > 0)
 			{
-				DestinationPoint.x = int((viewport.width / 2) * (1 + transformX / transformY));
-				DestinationPoint.y = viewport.height / 2;
+				DestinationPoint.x = int((0.5 * viewport.width) * (1 + transformX / transformY));
 				
+				//if we're projecting a singular point that is representing a game sprite, we need to adjust its scale
 				if (GameEntity) GameEntity.scale.x = GameEntity.scale.y = Math.abs(_height);
-				if (SourceZ == 0) DestinationPoint.y += map.texHeight * (_height / 2);
-				else if (SourceZ == map.texHeight) DestinationPoint.y -= map.texHeight * (_height / 2);
+				
+				DestinationPoint.y = 0.5 * viewport.height;
+				DestinationPoint.y -= (SourceZ / map.texHeight - 0.5) * map.texHeight * _height;
+				
+				//if (SourceZ == 0) DestinationPoint.y += 0.5 * map.texHeight * _height;
+				//else if (SourceZ == map.texHeight) DestinationPoint.y -= 0.5 * map.texHeight * _height;
 				return transformY / map.texHeight;
 			}
 			else 
