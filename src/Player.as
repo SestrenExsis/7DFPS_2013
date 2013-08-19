@@ -6,8 +6,8 @@ package
 	
 	public class Player extends FlxSprite
 	{
-		public static var tileWidth:uint = 1;
-		public static var tileHeight:uint = 1;
+		//public static var tileWidth:uint = 1;
+		//public static var tileHeight:uint = 1;
 		
 		private static var kUp:String = "W";
 		private static var kDown:String = "S";
@@ -30,6 +30,12 @@ package
 		public var magView:Number = 0;
 		public var angView:Number = 0;
 		
+		public var armor:uint;
+		public var ammo:uint;
+		public var maxHealth:uint;
+		public var maxArmor:uint;
+		public var maxAmmo:uint;
+		
 		public function Player(X:Number = 2, Y:Number = 2)
 		{
 			super(X, Y);
@@ -37,6 +43,13 @@ package
 			width = 64;
 			height = 64;
 			solid = true;
+			
+			maxHealth = 100;
+			maxArmor = 100;
+			maxAmmo = 100;
+			health = 100;
+			armor = 0;
+			ammo = 50;
 			
 			x = X * 128 - width / 2;
 			y = Y * 128 - height / 2;
@@ -62,7 +75,7 @@ package
 		override public function update():void
 		{
 			super.update();
-			if (FlxG.keys["SHIFT"]) speedMultiplier = 0.1;
+			if (FlxG.keys["SHIFT"]) speedMultiplier = 0.25;
 			else speedMultiplier = 1;
 			
 			velocity.x = velocity.y = 0;
@@ -78,7 +91,7 @@ package
 				velocity.y = dir.y * -moveSpeed * speedMultiplier;
 			}
 			
-			//will have to calculate this differently to prevent speed increases
+			//eventually, will have to calculate this differently to prevent speed increases
 			if (FlxG.keys["Q"])
 			{ //strafe left
 				velocity.x += view.x * -moveSpeed * speedMultiplier;
@@ -101,6 +114,29 @@ package
 				angularVelocity = -rotSpeed * speedMultiplier * (180 / Math.PI);
 			}
 			else angularVelocity = 0;
+		}
+		
+		public function attack():int
+		{
+			if (ammo > 0) 
+			{
+				ammo -= 1;
+				return Entity.ORB_GREEN;
+			}
+			else if (armor > 0) 
+			{
+				armor -= 1;
+				return Entity.ORB_BLUE;
+			}
+			else if (health > 1) 
+			{
+				health -= 1;
+				return Entity.ORB_RED;
+			}
+			else 
+			{
+				return -1;
+			}
 		}
 		
 		public function light(LightLevel:uint):void

@@ -121,20 +121,20 @@ package
 			FlxG.camera.follow(player);
 
 			entities = new FlxGroup();
-			for (var i:uint = 0; i < 2; i++)
+			for (var i:uint = 0; i < 100; i++)
 			{
-				for (var j:uint = 0; j < 2; j++)
-				{
-					entity = new Entity(i * 8 + 12, j * 8 + 12);
-					entity.target = player;
-					entities.add(entity);
-				}
+				entity = new Entity();
+				entity.target = player;
+				entities.add(entity);
 			}
 			
-			for (i = 0; i < 3; i++)
+			for (i = 0; i < 6; i++)
 			{
-				entity = new Entity(i * 2 + 15, j * 2 + 15, i + 1);
-				entities.add(entity);
+				entity = Entity(entities.getFirstAvailable(Entity));
+				if (entity) 
+				{
+					entity.spawn(int(FlxG.random() * 48 * 128), int(FlxG.random() * 24 * 128), Entity.TIPPYTOES);
+				}
 			}
 			
 			map = new Map(canvas, player);
@@ -165,8 +165,21 @@ package
 		override public function update():void
 		{	
 			super.update();
+			
+			if (FlxG.keys.justPressed("SPACE"))
+			{
+				entity = Entity(entities.getFirstAvailable(Entity));
+				if (entity) 
+				{
+					var _ammoSource:int = player.attack();
+					FlxG.log(_ammoSource);
+					if (_ammoSource == -1) return;
+					entity.spawn(player.pos.x + player.dir.x * 64, player.pos.y + player.dir.y * 64, _ammoSource);
+					entity.move(player.dir.x, player.dir.y);
+				}
+			}
 						
-			FlxG.overlap(meta, map, FlxObject.separate);
+			FlxG.overlap(meta, map, collideWithMap);
 			FlxG.overlap(meta, meta, objectsCollide, circularCollisionCheck);
 			
 			viewport.fill(0xff000000);
@@ -179,14 +192,24 @@ package
 				useVertexDictionary = !useVertexDictionary;
 			}
 			drawViewWithFaces();
+			displayText.text = player.health + "  " + player.armor + "  " + player.ammo;
 		}
 		
-		private function objectsCollide(Object1:FlxObject,Object2:FlxObject):void
+		private function objectsCollide(Object1:FlxObject, Object2:FlxObject):void
 		{
 			if (Object2 is Player) objectsCollide(Object2, Object1);
 			
 			if (Object1 is Player) (Object2 as Entity).hitsPlayer(Object1 as Player);
 			else (Object2 as Entity).hitsEntity(Object1 as Entity);
+		}
+		
+		private function collideWithMap(Object1:FlxObject, Object2:FlxObject):void
+		{
+			if (FlxObject.separate(Object1, Object2))
+			{
+				if (Object1 is Entity) (Object1 as Entity).hitsWall();
+				else if (Object2 is Entity) (Object2 as Entity).hitsWall();
+			}
 		}
 		
 		private function circularCollisionCheck(Object1:FlxObject,Object2:FlxObject):Boolean
@@ -689,10 +712,8 @@ package
 				if (entity.exists)
 				{
 					entity.distance = projectPointToScreen(entity.x, entity.y, 64, entity.viewPos, entity);
-					if (entity.distance == -1) entity.visible = false;
-					else 
+					if (entity.distance > 0) 
 					{
-						entity.visible = true;					
 						_width = entity.frameWidth * entity.scale.x;
 						
 						_leftEdge = int(entity.viewPos.x - 0.5 * _width);
@@ -702,12 +723,13 @@ package
 						if (_rightEdge >= viewport.width) _rightEdge = viewport.width - 1;
 						while ((_clipLeft < _rightEdge) && (_clipLeft + _leftEdge < zBuffer.length) 
 							&& (zBuffer[_clipLeft] < entity.distance)) _clipLeft += 1;
+						
 						entity.clipRect.x = _clipLeft;
 						_clipWidth = _rightEdge - _clipLeft;
 						if (_clipWidth > viewport.width - _clipLeft) _clipWidth = viewport.width - _clipLeft;
-						
 						while ((_clipWidth > 0) && (_clipLeft + _clipWidth < zBuffer.length) 
 							&& (zBuffer[_clipLeft + _clipWidth] < entity.distance)) _clipWidth -= 1;
+						
 						if (_clipWidth > 0)
 						{
 							entity.clipRect.width = _clipWidth + 1;
@@ -718,11 +740,7 @@ package
 							_posY = int(entity.pos.y / map.texHeight);
 							entity.light(map.lightmap[_posX + _posY * map.widthInTiles] + 1);
 						}
-						else 
-						{
-							entity.visible = false;
-							entity.distance = -1;
-						}
+						else entity.distance = -1;
 					}
 				}
 			}

@@ -15,6 +15,7 @@ package
 		public static const ORB_BLUE:uint = 3;
 		
 		protected var _pos:FlxPoint;
+		protected var _type:uint;
 		public var target:Player;
 		
 		public var distance:Number = 0;
@@ -22,11 +23,10 @@ package
 		public var clipRect:Rectangle;
 		public var moveSpeed:Number;
 		public var timer:FlxTimer;
-		public var type:uint;
 		
-		public function Entity(X:Number = 22, Y:Number = 12.5, Type:uint = 0)
+		public function Entity()
 		{
-			super(X, Y);
+			super(-1000, -1000);
 			
 			loadGraphic(imgSprites, true, false, 128, 128);
 			addAnimation("orb", [130, 131, 132, 131], 4, true);
@@ -34,40 +34,59 @@ package
 			addAnimation("tippytoes_idle", [111]);
 			addAnimation("tippytoes_die", [112, 113], 2, false);
 			
-			type = Type;
-			width = 48;
-			height = 48;
-			solid = true;
-			elasticity = 0;
-			
 			_pos = new FlxPoint(0, 0);
 			viewPos = new FlxPoint(0, 0);
 			clipRect = new Rectangle(0, 0, frameWidth, frameHeight);
 			timer = new FlxTimer();
-			moveSpeed = 9 * 128;
-			drag.x = drag.y = 48 * 128;
-			
-			x = X * 128 + width / 2;
-			y = Y * 128 + height / 2;
-			
-			if (type == TIPPYTOES)
+			onTimerKill(timer);
+		}
+		
+		public function get type():uint
+		{
+			return _type;
+		}
+		
+		public function set type(Type:uint):void
+		{
+			if (Type == TIPPYTOES)
 			{
+				solid = true;
+				width = 48;
+				height = 48;
 				color = 0xe4edb3;
+				health = 10;
+				moveSpeed = 9 * 128;
+				drag.x = drag.y = 48 * 128;
 				play("tippytoes_idle");
 				timer.start(0.25 * FlxG.random(), 1, onTimerMove);
 			}
 			else 
 			{
+				solid = true;
+				width = 32;
+				height = 32;
 				color = 0xff0000;
+				moveSpeed = 18 * 128;
+				drag.x = drag.y = 0;
 				play("orb");
 			}
+			_type = Type;
+		}
+		
+		public function spawn(X:Number, Y:Number, Type:uint):void
+		{
+			alive = true;
+			exists = true;
+			type = Type;
+			x = X - 0.5 * width;
+			y = Y - 0.5 * height;
 		}
 		
 		override public function update():void
 		{
 			super.update();
 			
-			if (FlxG.keys.justPressed("SPACE") && type == TIPPYTOES) kill();
+			//if (FlxG.keys.justPressed("SPACE") && type == TIPPYTOES) kill();
 		}
 		
 		override public function draw():void
@@ -155,14 +174,13 @@ package
 		{
 			alive = false;
 			exists = false;
-			destroy();
 		}
 		
 		override public function kill():void
 		{
 			alive = false;
 			timer.stop();
-			if (type == TIPPYTOES)
+			if (_type == TIPPYTOES)
 			{
 				play("tippytoes_die");
 				timer.start(1, 1, onTimerKill);
@@ -172,26 +190,53 @@ package
 		
 		public function hitsPlayer(Target:Player):void
 		{
-			if (type == ORB_RED || type == ORB_GREEN || type == ORB_BLUE) return;
-			if (FlxObject.separateX(this, Target)) 
+			if (_type == ORB_RED || _type == ORB_GREEN || _type == ORB_BLUE) 
 			{
-				velocity.x = 0;
-				x = last.x;
-				Target.velocity.x = 0;
-				Target.x = Target.last.x;
+				if (velocity.x == 0 && velocity.y == 0) kill();
 			}
-			if (FlxObject.separateY(this, Target)) 
+			else
 			{
-				velocity.y = 0;
-				y = last.y;
-				Target.velocity.y = 0;
-				Target.y = Target.last.y;
+				if (FlxObject.separateX(this, Target)) 
+				{
+					velocity.x = 0;
+					x = last.x;
+					Target.velocity.x = 0;
+					Target.x = Target.last.x;
+				}
+				if (FlxObject.separateY(this, Target)) 
+				{
+					velocity.y = 0;
+					y = last.y;
+					Target.velocity.y = 0;
+					Target.y = Target.last.y;
+				}
 			}
 		}
 		
 		public function hitsEntity(Target:Entity):void
 		{
-			
+			if (Target.type == TIPPYTOES && (type == ORB_RED || type == ORB_GREEN || type == ORB_BLUE)) 
+			{
+				if (Target.health <= 2) 
+				{
+					Target.move(velocity.x / moveSpeed, velocity.y / moveSpeed);
+					Target.drag.x = Target.drag.y = 18 * 128;
+				}
+				Target.hurt(2);
+				kill();
+			}
+		}
+		
+		public function hitsWall():void
+		{
+			if (type == ORB_RED || type == ORB_GREEN || type == ORB_BLUE) kill();
+		}
+		
+		public function move(UnitX:Number, UnitY:Number):void
+		{
+			velocity.x = UnitX * moveSpeed;
+			velocity.y = UnitY * moveSpeed;
+			FlxG.log(UnitX + " " + UnitY);
 		}
 		
 		public function toRadians(Degrees:Number):Number
@@ -218,28 +263,28 @@ package
 			var _green:uint;
 			var _blue:uint;
 			
-			if (type == TIPPYTOES)
+			if (_type == TIPPYTOES)
 			{
 				_red = 228 * _light;
 				_green = 237 * _light;
 				_blue = 179 * _light;
 				color = (_red << 16) + (_green << 8) + _blue;
 			}
-			else if (type == ORB_RED)
+			else if (_type == ORB_RED)
 			{
 				_red = 255 * _light;
 				_green = 0 * _light;
 				_blue = 0 * _light;
 				color = (_red << 16) + (_green << 8) + _blue;
 			}
-			else if (type == ORB_GREEN)
+			else if (_type == ORB_GREEN)
 			{
 				_red = 0 * _light
 				_green = 255 * _light;
 				_blue = 0 * _light;
 				color = (_red << 16) + (_green << 8) + _blue;
 			}
-			else if (type == ORB_BLUE)
+			else if (_type == ORB_BLUE)
 			{
 				_red = 0 * _light
 				_green = 0 * _light;
