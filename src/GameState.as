@@ -10,15 +10,6 @@ package
 	import org.flixel.*;
 	import org.flixel.system.FlxTile;
 	
-	/*
-	HUD: different helmets/visors grant different FOVs, LOS, powers, etc.
-	Blind PC needs the HUD to see at all?
-	The world is drawn through the HUD using an imperfect algorithm to simulate the HUD. Selects points on a grid to raycast, either
-	uniform or condensed near the center? (or both, depending on the HUD?).
-	Slow-motion portions let you see the world in front of you being simulated on the HUD bit-by-bit. Perhaps some split-second
-	decisions or detective portions to figure out what needs to be done?
-	*/
-	
 	public class GameState extends ScreenState
 	{
 		[Embed(source="../assets/images/FlixelFPS_Spritemap.png")] protected static var imgWalls:Class;
@@ -172,7 +163,6 @@ package
 				if (entity) 
 				{
 					var _ammoSource:int = player.attack();
-					FlxG.log(_ammoSource);
 					if (_ammoSource == -1) return;
 					entity.spawn(player.pos.x + player.dir.x * 64, player.pos.y + player.dir.y * 64, _ammoSource);
 					entity.move(player.dir.x, player.dir.y);
@@ -631,6 +621,8 @@ package
 		
 		public function drawPlaneToCanvas(Point0:FlxPoint, Point1:FlxPoint, Point2:FlxPoint, Point3:FlxPoint, SourceRect:Rectangle):void
 		{
+			//Many thanks to http://zehfernando.com/2010/the-best-drawplane-distortimage-method-ever/ for this!
+			
 			var _indentX:Number = 0.000390625;//1/128/10/2;
 			var _indentY:Number = 0.000390625;//1/128/20/2;
 			_point = intersect(Point0, Point1, Point2, Point3);
@@ -667,7 +659,6 @@ package
 		{
 			// Returns a point containing the intersection between two lines
 			// http://keith-hair.net/blog/2008/08/04/find-intersection-point-of-two-lines-in-as3/
-			// http://www.gamedev.pastebin.com/f49a054c1
 			
 			var a1:Number = Point3.y - Point0.y;
 			var b1:Number = Point0.x - Point3.x;
